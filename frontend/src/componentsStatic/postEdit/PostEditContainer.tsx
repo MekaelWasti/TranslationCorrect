@@ -26,11 +26,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     // TODO: fix string index bug
     const start = String(translatedText).indexOf(selection.toString());
-    addNewErrorSpan(
-      start,
-      start + selection.toString().length,
-      "Addition of Text"
-    );
+    addNewErrorSpan(start, start + selection.toString().length, "Addition");
   };
 
   const handleInput = () => {

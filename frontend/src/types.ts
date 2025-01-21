@@ -9,12 +9,23 @@ export interface HighlightedError {
   error_type: string;
 }
 
+// export const colorMappings: { [key: string]: string } = {
+//   "Addition of Text": "#FF5733",
+//   "Negation Errors": "#00A0F0",
+//   "Mask In-filling": "#59c00a",
+//   "Named Entity (NE) Errors": "#D3365A",
+//   "Number (NUM) Errors": "#8B4513",
+//   "Hallucinations": "#800080",
+//   "No Error": "#2f3472"
+// };
+
 export const colorMappings: { [key: string]: string } = {
-  "Addition of Text": "#FF5733",
-  "Negation Errors": "#00A0F0",
-  "Mask In-filling": "#59c00a",
-  "Named Entity (NE) Errors": "#D3365A",
-  "Number (NUM) Errors": "#8B4513",
-  "Hallucinations": "#800080",
-  "No Error": "#2f3472"
+  "Addition": "#FF5733",
+  "Omission": "#00A0F0",
+  "Mistranslation": "#59c00a",
+  "Untranslated": "#D3365A",
+  "Grammar": "#8B4513",
+  "Spelling": "#800080",
+  "Typography": "#2f3472",
+  "Unintelligible": "#800000"
 };

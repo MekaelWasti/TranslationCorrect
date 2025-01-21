@@ -3,7 +3,9 @@ import "../index.css";
 import HighlightedText from "./postEdit/HighlightedText";
 import { PostEditContainer } from "./postEdit/PostEditContainer";
 import { ScoringContainer } from "./scoring/ScoringContainer";
+import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
+import logo from "../assets/logo.svg";
 
 const App: React.FC = () => {
   const {
@@ -29,8 +31,10 @@ const App: React.FC = () => {
   // **JSX**
   return (
     <div className="body">
-      <h2>TranslationCorrect Annotation Tool</h2>
-      <p>Entry #{curEntryIdx}</p>
+      <img className="logo_1" src={logo} alt="" />
+      {/* DB Viewer */}
+      <DatabaseSentenceView />
+
       <div className="divider"></div>
       <h3>Source</h3>
       <div>
@@ -64,10 +68,8 @@ const App: React.FC = () => {
         highlightedError={highlightedError!}
         onDiffTextUpdate={handleDiffTextUpdate}
       />
-
       {/* Scoring Section */}
       <ScoringContainer />
-
       <div className="accept-translation-section">
         <button onClick={() => setEntryIdx(curEntryIdx + 1)}>
           Submit Annotation
@@ -77,7 +79,6 @@ const App: React.FC = () => {
       <div>
         <button onClick={() => setEntryIdx(0)}>Restart to entry #0</button>
       </div>
-
       <div className="send-feedback">
         <a>Send Feedback</a>
       </div>
