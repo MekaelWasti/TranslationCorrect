@@ -15,7 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(200).end();
     return;
     }
-
+    
     const db = client.db('annotations');
     const annotators_collection = db.collection('annotators');
 
@@ -31,16 +31,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // Login
         if (user) {
-            if (user.password === password) {
-                const dataset = await db.collection('annotation-tool-dataset').find({}).toArray();
-                return res.status(200).json({ message: "Login successful", dataset }); // Return the dataset if the user is authenticated successfully
-            }
-            else {
-                return res.status(401).json({ error: "Incorrect password" });
-            }
+            return res.status(401).json({ error: "User already exists, please login or choose another username" });
         }
         else {
-            return res.status(401).json({ error: "User not found. Please enter a valid username or register." });
+            // Registration
+            await annotators_collection.insertOne({ username, password, createdAt: new Date(), });
+            return res.status(201).json({ message: "Registration successful" });
         }
     }
     catch (error) {
