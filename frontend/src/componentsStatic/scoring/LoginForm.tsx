@@ -1,80 +1,93 @@
 import React, { useState } from "react";
 
-type LoginFormProps = {};
+export const LoginForm: React.FC = () => {
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [isNewUser, setIsNewUser] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
 
-export const LoginForm: React.FC<LoginFormProps> = ({}) => {
-  const [username, setUsername] = useState("Mekael");
-  const [password, setPassword] = useState("AT");
-  const [isNewUser, setIsNewUser] = useState(false);
+  const handleSubmit = async () => {
+    setError(null); // Reset error state before submitting
 
-  const handleCheckUser = async () => {
     try {
-      const response = await fetch("/api/get", {
-        method: "GET",
-      });
-
-      const users = await response.json();
-
-      // Check if the username and password exist in the returned users
-      const userExists = users.some(
-        (user: { username: string; password: string }) =>
-          user.username === username && user.password === password
+      const response = await fetch(
+        "https://translation-correct-annotation-task-dutd.vercel.app/api/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ username, password }),
+        }
       );
 
-      setIsNewUser(!userExists); // If user doesn't exist, they are new
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-    }
-  };
-
-  const handleRegister = async () => {
-    try {
-      const response = await fetch("/api/insert", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+      const data = await response.json();
 
       if (response.ok) {
-        alert("Registration successful! You can now log in.");
-        setIsNewUser(false);
+        if (isNewUser) {
+          alert("Registration successful! You can now log in.");
+          setIsNewUser(false); // Switch back to login mode
+        } else {
+          alert("Login successful!");
+          console.log("Dataset:", data.dataset); // Use this dataset in your app
+        }
       } else {
-        alert("Registration failed. Please try again.");
+        setError(data.error || "Something went wrong. Please try again.");
       }
-    } catch (error) {
-      console.error("Failed to register user:", error);
-    }
-  };
-
-  const handleLogin = async () => {
-    await handleCheckUser(); // Recheck if the user exists
-    if (!isNewUser) {
-      alert("Login successful!");
-    } else {
-      alert("User does not exist. Please register first.");
+    } catch (err) {
+      console.error("Error during login/registration:", err);
+      setError("An unexpected error occurred. Please try again.");
     }
   };
 
   return (
     <div>
-      <input
-        type="text"
-        placeholder="Username"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        onBlur={handleCheckUser} // Check user existence when they stop typing
-      />
-      <input
-        type="password"
-        placeholder="Password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
-      {!isNewUser ? (
-        <button onClick={handleLogin}>Log In</button>
-      ) : (
-        <button onClick={handleRegister}>Register</button>
-      )}
+      <h2>{isNewUser ? "Register" : "Log In"}</h2>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <div>
+          <label htmlFor="username">Username:</label>
+          <input
+            type="text"
+            id="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="password">Password:</label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        </div>
+
+        {error && <p style={{ color: "red" }}>{error}</p>}
+
+        <button type="submit">{isNewUser ? "Register" : "Log In"}</button>
+      </form>
+
+      <p>
+        {isNewUser ? "Already have an account?" : "Don't have an account?"}{" "}
+        <button
+          type="button"
+          onClick={() => {
+            setIsNewUser(!isNewUser);
+            setError(null); // Clear any existing errors
+          }}
+        >
+          {isNewUser ? "Log In" : "Register"}
+        </button>
+      </p>
     </div>
   );
 };

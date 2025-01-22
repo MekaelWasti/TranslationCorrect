@@ -5,6 +5,17 @@ const uri = process.env.MONGODB_URI!;
 const client = new MongoClient(uri)
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Add CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*"); // Allow requests from any origin
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS"); // Allowed HTTP methods
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type"); // Allowed headers
+
+  // Handle preflight OPTIONS request
+  if (req.method === "OPTIONS") {
+  res.status(200).end();
+  return;
+  }
+  
   const db = client.db('annotations');
   const annotations_collection = db.collection('annotation-tool-dataset');
 
