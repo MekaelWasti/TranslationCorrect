@@ -4,6 +4,21 @@ import { MongoClient } from "mongodb";
 const uri = process.env.MONGODB_URI!;
 const client = new MongoClient(uri)
 
+
+interface Annotation {
+  username: string;
+  annotation: string;
+  createdAt: Date;
+}
+
+interface DocumentSchema {
+  id: number;
+  src: string;
+  mt: string;
+  ref: string;
+  annotations: Annotation[];
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Add CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*"); // Allow requests from any origin
@@ -15,35 +30,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.status(200).end();
   return;
   }
+
+  
   
   const db = client.db('annotations');
-  const annotations_collection = db.collection('annotation-tool-dataset');
+  const annotations_collection = db.collection<DocumentSchema>('annotation-tool-dataset');
 
   if (req.method == "POST") {
-    const { id, username, annotation } = req.body;
+    const { id, annotation } = req.body;
 
-    if (!id || !username || !annotation) {
+    if (!id || !annotation) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
+      
+      const annotationObject = annotation[0];
+
+      if (!annotationObject) {
+        return res.status(400).json({ error: "Empty annotation object" });
+      }
+
       const result = await annotations_collection.updateOne(
-        { id },
+        { id }, // Match the document by its `id`
         {
-          $set: {
-            [`annotations.$(username)`]: {
-              annotation,
-              createdAt: new Date(),
-            },
+          $push: {
+            annotations: annotation},
           },
-        }
       );
 
       if (result.modifiedCount > 0) {
         return res.status(200).json({ message: "Annotation submitted successfully" });
       }
       else {
-        return res.status(404).json({ error: "Failed to update annotation" });
+        return res.status(404).json({ error: "Failed to update annotation", });
       }
     }
     catch (error) {
