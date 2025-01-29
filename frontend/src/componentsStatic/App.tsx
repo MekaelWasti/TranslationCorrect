@@ -116,6 +116,7 @@ const App: React.FC = () => {
         setDiffContent={setDiffContent}
         username={username}
         setUsername={setUsername}
+        sentenceID={sentenceID}
         setSentenceID={setSentenceID}
       />
 
