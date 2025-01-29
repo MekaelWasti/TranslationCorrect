@@ -14,27 +14,8 @@
                 "end_index_orig": 3,
                 "start_index_translation": 9,
                 "end_index_translation": 14,
-                "error_type": "Hallucinations"
-            },
-            {
-                "original_text": "赢得比赛",
-                "translated_text": "win the game",
-                "correct_text": "win the match",
-                "start_index_orig": 4,
-                "end_index_orig": 9,
-                "start_index_translation": 19,
-                "end_index_translation": 28,
-                "error_type": "Addition of Text"
-            },
-            {
-                "original_text": "赢得比赛",
-                "translated_text": "win the game",
-                "correct_text": "win the match",
-                "start_index_orig": 15,
-                "end_index_orig": 20,
-                "start_index_translation": 49,
-                "end_index_translation": 65,
-                "error_type": "Addition of Text"
+                "error_type": "Hallucinations",
+                "error_severity": "Major"
             }
         ]
     },
@@ -51,27 +32,8 @@
                 "end_index_orig": 3,
                 "start_index_translation": 9,
                 "end_index_translation": 14,
-                "error_type": "Hallucinations"
-            },
-            {
-                "original_text": "赢得比赛",
-                "translated_text": "win the game",
-                "correct_text": "win the match",
-                "start_index_orig": 4,
-                "end_index_orig": 9,
-                "start_index_translation": 19,
-                "end_index_translation": 28,
-                "error_type": "Addition of Text"
-            },
-            {
-                "original_text": "赢得比赛",
-                "translated_text": "win the game",
-                "correct_text": "win the match",
-                "start_index_orig": 30,
-                "end_index_orig": 35,
-                "start_index_translation": 80,
-                "end_index_translation": 85,
-                "error_type": "Addition of Text"
+                "error_type": "Hallucinations",
+                "error_severity": "Major"
             }
         ]
     }

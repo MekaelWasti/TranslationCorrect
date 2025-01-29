@@ -126,7 +126,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     setSpanDropdown(false);
   };
 
-  console.log(highlights);
+  // console.log(highlights);
 
   interface Range {
     start: number;
@@ -188,6 +188,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
                 highlightStart,
                 highlightEnd
               );
+
               fragments.push(
                 <span
                   key={`highlight-${nodeStartIndex + highlightStart}`}
@@ -275,16 +276,16 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
           }}
         >
           <ul>
-            {Object.keys(colorMappings).map((errorType) => (
-              <div className="dropdown-selection" key={errorType}>
+            {Object.keys(colorMappings).map((error_type) => (
+              <div className="dropdown-selection" key={error_type}>
                 <li
                   style={{
-                    // color: colorMappings[errorType],
-                    "--hover-color": colorMappings[errorType],
+                    // color: colorMappings[error_type],
+                    "--hover-color": colorMappings[error_type],
                   }}
-                  onClick={() => handleTypeSelect(errorType)}
+                  onClick={() => handleTypeSelect(error_type)}
                 >
-                  <p>{errorType}</p>
+                  <p>{error_type}</p>
                 </li>
                 <hr className="dropdown-divider" />
               </div>

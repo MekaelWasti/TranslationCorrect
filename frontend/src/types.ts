@@ -7,6 +7,7 @@ export interface HighlightedError {
   start_index_translation: number;
   end_index_translation: number;
   error_type: string;
+  error_severity: string;
 }
 
 // export const colorMappings: { [key: string]: string } = {

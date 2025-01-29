@@ -9,7 +9,8 @@ import {
 
 import { HighlightedError } from "../types";
 // import inputJson from "../static/input_sample.json";
-import inputJson from "../static/input.json";
+// import inputJson from "../static/input.json";
+import inputJson from "../static/input_sample.json";
 
 // Provides context to components responsible for evaluating / editing translations.
 // Currently only stores selected span index and span scores. Down the road, the provider can be used to track all evaluation/edit status.
@@ -18,22 +19,34 @@ type SpanEvalContextType = {
   curEntryIdx: number;
   setEntryIdx: (newEntryIdx: number) => void;
   origText: string;
+  setOrigText: Dispatch<SetStateAction<string>>;
   translatedText: string;
+  setTranslatedText: Dispatch<SetStateAction<string>>;
   originalSpans: HighlightedError[] | undefined;
   errorSpans: HighlightedError[] | undefined;
+  setErrorSpans: Dispatch<SetStateAction<HighlightedError[]>>;
   updateSpanErrorType: (idx: number, newType: string) => void;
+  updateSpanSeverity: (idx: number, newSeverity: string) => void;
+  spanSeverity: string;
+  setSpanSeverity: Dispatch<SetStateAction<string>>;
   addNewErrorSpan: (
+    original_text: string,
     startTextIdx: number,
     endTextIdx: number,
-    type: string
+    error_type: string,
+    severity: string
   ) => void;
   selectedSpanIdx: number | undefined;
   setSelectedSpanIdx: Dispatch<SetStateAction<number | undefined>>;
   diffContent: React.ReactNode;
   setDiffContent: Dispatch<SetStateAction<React.ReactNode>>;
-  spanScores: { [key: number]: number };
+  // spanScores: { [key: number]: number };
+  // setSpanScores:
+  // | Dispatch<SetStateAction<{ [key: number]: number }>>
+  // | undefined;
+  spanScores: { [key: number]: string };
   setSpanScores:
-    | Dispatch<SetStateAction<{ [key: number]: number }>>
+    | Dispatch<SetStateAction<{ [key: number]: string }>>
     | undefined;
 };
 
@@ -58,10 +71,15 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
   );
   const originalSpans = input[curEntryIdx].errorSpans;
   const [errorSpans, setErrorSpans] = useState<HighlightedError[]>(
-    input[curEntryIdx].errorSpans
+    // input[curEntryIdx].errorSpans
+    []
   );
   const [diffContent, setDiffContent] =
     useState<React.ReactNode>(translatedText);
+
+  const [error_type, setError_type] = useState<string>("");
+
+  const [spanSeverity, setSpanSeverity] = useState<string>("");
 
   const setEntryIdx = (newEntryIdx: number) => {
     if (newEntryIdx >= input.length) {
@@ -84,17 +102,32 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
 
     setErrorSpans(newErrorSpans);
   };
+
+  const updateSpanSeverity = (idx: number, newSeverity: string) => {
+    const newErrorSpan = { ...errorSpans[idx], error_severity: newSeverity };
+    const newErrorSpans = [
+      ...errorSpans.slice(0, idx),
+      newErrorSpan,
+      ...errorSpans.slice(idx + 1, errorSpans.length),
+    ];
+
+    setErrorSpans(newErrorSpans);
+  };
   const addNewErrorSpan = (
+    original_text: string,
     startTextIdx: number,
     endTextIdx: number,
-    type: string
+    error_type: string,
+    error_severity: string
   ) => {
     const newErrorSpans = [
       ...errorSpans,
       {
+        original_text: original_text,
         start_index_translation: startTextIdx,
         end_index_translation: endTextIdx,
-        error_type: type,
+        error_type: error_type,
+        error_severity: error_severity,
       } as HighlightedError,
     ];
     setErrorSpans(newErrorSpans);
@@ -102,7 +135,8 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
 
   const [selectedSpanIdx, setSelectedSpanIdx] = useState<number>();
   const [spanScores, setSpanScores] = useState<{
-    [key: number]: number;
+    // [key: number]: number;
+    [key: number]: string; //Change to Minor / Major selection
   }>({}); // span idx: score
 
   useEffect(() => {
@@ -110,13 +144,19 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
   }, [spanScores]);
 
   const contextValue = {
+    origText,
     curEntryIdx,
     setEntryIdx,
-    origText,
+    setOrigText,
     translatedText,
+    setTranslatedText,
     originalSpans,
     errorSpans,
+    setErrorSpans,
     updateSpanErrorType,
+    spanSeverity,
+    setSpanSeverity,
+    updateSpanSeverity,
     addNewErrorSpan,
     diffContent,
     setDiffContent,
@@ -124,6 +164,7 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     setSelectedSpanIdx,
     spanScores,
     setSpanScores,
+    error_type,
   };
 
   return (

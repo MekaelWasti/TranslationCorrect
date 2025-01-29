@@ -1,6 +1,25 @@
 import React, { useState } from "react";
 
-export const LoginForm: React.FC = () => {
+type LoginFormProps = {
+  setSentenceData: React.Dispatch<
+    React.SetStateAction<
+      {
+        _id: string;
+        id: number;
+        src: string;
+        mt: string;
+        ref: string;
+        annotations: Object;
+      }[]
+    >
+  >;
+  setDBUsername: React.Dispatch<React.SetStateAction<string>>;
+};
+
+export const LoginForm: React.FC<LoginFormProps> = ({
+  setSentenceData,
+  setDBUsername,
+}) => {
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [isNewUser, setIsNewUser] = useState<boolean>(false);
@@ -9,39 +28,61 @@ export const LoginForm: React.FC = () => {
   const handleSubmit = async () => {
     setError(null); // Reset error state before submitting
 
-    try {
-      const response = await fetch(
-        "https://translation-correct-annotation-task-dutd.vercel.app/api/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ username, password }),
+    if (!isNewUser) {
+      try {
+        const response = await fetch(
+          "https://translation-correct-annotation-task-dutd.vercel.app/api/login",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+          }
+        );
+
+        const data = await response.json();
+        if (response.ok) {
+          alert("Log in successful!");
+          setSentenceData(data.dataset);
+          setDBUsername(username);
+          console.log("Dataset:", data.dataset);
+        } else {
+          setError(data.error || "Something went wrong. Please try again.");
         }
-      );
+      } catch (err) {
+        console.error("Error during login", err);
+        setError("An unexpected error occurred. Please try again.");
+      }
+    } else {
+      try {
+        const response = await fetch(
+          "https://translation-correct-annotation-task-dutd.vercel.app/api/register",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+          }
+        );
 
-      const data = await response.json();
-
-      if (response.ok) {
-        if (isNewUser) {
+        const data = await response.json();
+        if (response.ok) {
           alert("Registration successful! You can now log in.");
           setIsNewUser(false); // Switch back to login mode
         } else {
-          alert("Login successful!");
-          console.log("Dataset:", data.dataset); // Use this dataset in your app
+          setError(data.error || "Something went wrong. Please try again.");
         }
-      } else {
-        setError(data.error || "Something went wrong. Please try again.");
+      } catch (err) {
+        console.error("Error during login/registration:", err);
+        setError("An unexpected error occurred. Please try again.");
       }
-    } catch (err) {
-      console.error("Error during login/registration:", err);
-      setError("An unexpected error occurred. Please try again.");
     }
   };
 
   return (
-    <div>
+    <div className="login-form">
       <h2>{isNewUser ? "Register" : "Log In"}</h2>
       <form
         onSubmit={(e) => {
@@ -73,12 +114,16 @@ export const LoginForm: React.FC = () => {
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
-        <button type="submit">{isNewUser ? "Register" : "Log In"}</button>
+        <button className="login-button" type="submit">
+          {isNewUser ? "Register" : "Log In"}
+        </button>
+        <button className="login-button">Log Out</button>
       </form>
 
       <p>
         {isNewUser ? "Already have an account?" : "Don't have an account?"}{" "}
         <button
+          className="login-button"
           type="button"
           onClick={() => {
             setIsNewUser(!isNewUser);

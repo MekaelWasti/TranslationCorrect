@@ -5,8 +5,16 @@ import { SpanScoreDropdown } from "./SpanScoreDropdown";
 import { OverallScoreSlider } from "./OverallScoreSlider";
 import { useSpanEvalContext } from "../SpanEvalProvider";
 
+type ScoringContainerProps = {
+  overallScore: number;
+  setOverallScore: React.Dispatch<React.SetStateAction<number>>;
+};
+
 // **ScoringContainer Component**
-export const ScoringContainer: React.FC = () => {
+export const ScoringContainer: React.FC<ScoringContainerProps> = ({
+  overallScore,
+  setOverallScore,
+}) => {
   const { spanScores } = useSpanEvalContext();
   //   Return JSX
   return (
@@ -15,7 +23,10 @@ export const ScoringContainer: React.FC = () => {
         {/* <SpanScoreSlider /> */}
         <SpanScoreDropdown />
         <div className="divider"></div>
-        <OverallScoreSlider />
+        <OverallScoreSlider
+          overallScore={overallScore}
+          setOverallScore={setOverallScore}
+        />
       </div>
       {/* Displaying All Span Scores */}
       <div className="span-scores-display">

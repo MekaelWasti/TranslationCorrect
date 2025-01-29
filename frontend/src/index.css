@@ -603,7 +603,8 @@ li {
 }
 
 .custom-correction-button:hover,
-.insert-span-button:hover {
+.insert-span-button:hover,
+.login-button:hover {
   /* background-color: #1e1e1e; */
   /* color: rgb(200, 200, 200); */
 
@@ -654,7 +655,8 @@ li {
 }
 
 .custom-correction-button,
-.insert-span-button {
+.insert-span-button,
+.login-button {
   margin: 2vh 2vw 1vh 2vw;
   padding: 1vh 3vw 1vh 3vw;
   border-radius: 7px;
@@ -844,8 +846,10 @@ td {
 
 .db-sentence-view {
   border: #333333 solid 1.7px;
-  height: 30vh;
+  height: 50vh;
   overflow: auto;
+  resize: vertical;
+  min-height: 20vh;
   background-color: #1a1a1a;
   border-radius: 8px;
   /* padding: 1.5vh 1.5vw 1.5vh 1.5vw; */
@@ -877,4 +881,18 @@ td {
 
 .status-cell {
   text-align: center;
+}
+
+.login-form {
+  font-weight: bold;
+}
+
+.login-form label {
+  padding: 0vh 3vw 1vh 0;
+}
+
+.login-form form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }

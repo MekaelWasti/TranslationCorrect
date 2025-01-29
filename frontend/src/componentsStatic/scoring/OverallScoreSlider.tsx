@@ -1,10 +1,17 @@
 import React, { useState } from "react";
 import "../../index.css";
 
+type OverallScoreSliderProps = {
+  overallScore: number;
+  setOverallScore: React.Dispatch<React.SetStateAction<number>>;
+};
+
 // **ScoringContainer Component**
-export const OverallScoreSlider: React.FC = () => {
+export const OverallScoreSlider: React.FC<OverallScoreSliderProps> = ({
+  overallScore,
+  setOverallScore,
+}) => {
   // **Functions**
-  const [overallScore, setOverallScore] = useState<number>(50);
   const handleOverallScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setOverallScore(Number(e.target.value));
   };

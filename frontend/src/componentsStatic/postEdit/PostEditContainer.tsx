@@ -9,6 +9,9 @@ type PostEditContainerProps = {
   machineTranslation: string;
   highlightedError: HighlightedError[];
   onDiffTextUpdate: (newDiffText: React.ReactNode) => void;
+  setModifiedText: (newText: string) => void;
+  addedErrorSpans: [] | any;
+  setAddedErrorSpans: (newErrorSpans: [] | any) => void;
 };
 
 // **PostEditContainer Component**
@@ -16,6 +19,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   machineTranslation,
   highlightedError,
   onDiffTextUpdate,
+  setModifiedText,
+  addedErrorSpans,
+  setAddedErrorSpans,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
   const { translatedText, addNewErrorSpan } = useSpanEvalContext();
@@ -26,7 +32,32 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     // TODO: fix string index bug
     const start = String(translatedText).indexOf(selection.toString());
-    addNewErrorSpan(start, start + selection.toString().length, "Addition");
+    console.log(
+      "AH",
+      translatedText.substring(start, start + selection.toString().length)
+    );
+    const original_text = translatedText.substring(
+      start,
+      start + selection.toString().length
+    );
+    addNewErrorSpan(
+      original_text,
+      start,
+      start + selection.toString().length,
+      "Addition",
+      "Minor"
+    );
+
+    setAddedErrorSpans([
+      ...addedErrorSpans,
+      {
+        original_text: original_text,
+        start_index_translation: start,
+        end_index_translation: start + selection.toString().length,
+        error_type: "Addition",
+        error_severity: "Minor",
+      },
+    ]);
   };
 
   const handleInput = () => {
@@ -39,6 +70,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     const dmp = new diff_match_patch();
     const diffs = dmp.diff_main(original, modified);
     dmp.diff_cleanupSemantic(diffs);
+
+    // Send raw modified text to parent component
+    setModifiedText(modified);
 
     // Convert diffs into React elements
     const diffElements = diffs.map(([type, text], index) => {
