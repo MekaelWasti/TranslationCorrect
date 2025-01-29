@@ -4,6 +4,12 @@ import { MongoClient, ObjectId } from "mongodb";
 const uri = process.env.MONGODB_URI!;
 const client = new MongoClient(uri)
 
+interface Annotation {
+  username: string;
+  annotation: string;
+  createdAt: Date;
+}
+
 interface DocumentSchema {
   id: number;
   src: string;
