@@ -1,15 +1,8 @@
 import { VercelRequest, VercelResponse } from "@vercel/node";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 const uri = process.env.MONGODB_URI!;
 const client = new MongoClient(uri)
-
-
-interface Annotation {
-  username: string;
-  annotation: string;
-  createdAt: Date;
-}
 
 interface DocumentSchema {
   id: number;
@@ -36,27 +29,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const db = client.db('annotations');
   const annotations_collection = db.collection<DocumentSchema>('annotation-tool-dataset');
 
-  if (req.method == "POST") {
-    const { id, annotation } = req.body;
+  if (req.method === "POST") {
+    const { id, ...annotationData } = req.body; // Extract `id` separately, rest is annotation data
 
-    if (!id || !annotation) {
+    if (!id || Object.keys(annotationData).length === 0) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
-      
-      const annotationObject = annotation[0];
-
-      if (!annotationObject) {
-        return res.status(400).json({ error: "Empty annotation object" });
-      }
+      const documentId = new ObjectId(id); // Convert ID to MongoDB ObjectId
 
       const result = await annotations_collection.updateOne(
-        { id }, // Match the document by its `id`
+        { _id: documentId }, // Match document by ObjectId
         {
-          $push: {
-            annotations: annotation},
-          },
+          $push: annotationData, // Append the received annotation under its dynamic key
+        }
       );
 
       if (result.modifiedCount > 0) {
