@@ -45,10 +45,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const documentId = ObjectId.createFromHexString(id);
 
+      const annotationKey = Object.keys(annotationData)[0];       
+
       const result = await annotations_collection.updateOne(
         { _id: documentId }, // Match document by `_id`
         {
-          $push: { annotations: annotationData }, // Push annotation into `annotations` array
+          $set: { [`annotations.${annotationKey}`]: annotationData[annotationKey] }, // Use the extracted annotation key
         }
       );
 
