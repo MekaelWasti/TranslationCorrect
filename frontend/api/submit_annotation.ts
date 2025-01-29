@@ -36,32 +36,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const annotations_collection = db.collection<DocumentSchema>('annotation-tool-dataset');
 
   if (req.method === "POST") {
-    const { id, ...annotationData } = req.body; // Extract `id` separately, rest is annotation data
+    const { id, ...annotationData } = req.body; // Extract `_id` separately
 
     if (!id || Object.keys(annotationData).length === 0) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
-      const documentId = new ObjectId(id); // Convert ID to MongoDB ObjectId
+      const documentId = ObjectId.createFromHexString(id);
 
       const result = await annotations_collection.updateOne(
-        { _id: documentId }, // Match document by ObjectId
+        { _id: documentId }, // Match document by `_id`
         {
-          $push: annotationData, // Append the received annotation under its dynamic key
+          $push: { annotations: annotationData }, // Push annotation into `annotations` array
         }
       );
 
       if (result.modifiedCount > 0) {
         return res.status(200).json({ message: "Annotation submitted successfully" });
+      } else {
+        return res.status(404).json({ error: "Document not found or update failed" });
       }
-      else {
-        return res.status(404).json({ error: "Failed to update annotation", });
-      }
-    }
-    catch (error) {
-      console.error("Error submitting annotation", error);
-      res.status(500).json({ error: "Internal Server Error", details: error });
+    } catch (error) {
+      console.error("Error submitting annotation:", error);
+      return res.status(500).json({ error: "Internal Server Error", details: error });
     }
   }
   res.setHeader("Allow", ["POST"]);
