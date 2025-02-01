@@ -6,6 +6,8 @@ import { HighlightedError, colorMappings } from "../../types";
 import "../../index.css";
 import { useSpanEvalContext } from "../SpanEvalProvider";
 
+// This component is used to render text that requires span editing behaviour (insertion, error tooltip, error type selection, etc.)
+
 type HighlightTextProps = {
   text: React.ReactNode;
   highlights: HighlightedError[];
@@ -149,6 +151,10 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     } as Range;
   });
 
+  /**
+   * Renders the text that resides in this component. Applies highlighting to the text based on the provided ranges.
+   *
+   */
   const getHighlightedText = (
     nodes: React.ReactNode[],
     highlights: Range[],

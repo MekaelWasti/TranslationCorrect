@@ -114,6 +114,7 @@ const App: React.FC = () => {
         setOrigText={setOrigText}
         setTranslatedText={setTranslatedText}
         setDiffContent={setDiffContent}
+        setModifedText={setModifiedText}
         username={username}
         setUsername={setUsername}
         sentenceID={sentenceID}
@@ -150,8 +151,10 @@ const App: React.FC = () => {
       <div className="divider"></div>
       <PostEditContainer
         machineTranslation={machineTranslation}
+        setMachineTranslation={setTranslatedText}
         highlightedError={highlightedError!}
         onDiffTextUpdate={handleDiffTextUpdate}
+        modifiedText={modifiedText}
         setModifiedText={setModifiedText}
         addedErrorSpans={addedErrorSpans}
         setAddedErrorSpans={setAddedErrorSpans}

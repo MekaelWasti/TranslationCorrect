@@ -9,6 +9,7 @@ type DatabaseSentenceViewProps = {
   setOrigText: React.Dispatch<React.SetStateAction<string>>;
   setTranslatedText: React.Dispatch<React.SetStateAction<string>>;
   setDiffContent: React.Dispatch<React.SetStateAction<React.ReactNode>>;
+  setModifedText: React.Dispatch<React.SetStateAction<string>>;
   username: string;
   setUsername: React.Dispatch<React.SetStateAction<string>>;
   sentenceID: string;
@@ -19,6 +20,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setOrigText,
   setTranslatedText,
   setDiffContent,
+  setModifedText,
   username,
   setUsername,
   sentenceID,
@@ -59,6 +61,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setTranslatedText(item.mt);
     setDiffContent(item.mt);
     setSentenceID(item._id);
+    setModifedText(item.mt);
   };
 
   return (

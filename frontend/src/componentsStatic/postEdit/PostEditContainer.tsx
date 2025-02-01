@@ -1,5 +1,5 @@
 import { DIFF_DELETE, DIFF_INSERT, diff_match_patch } from "diff-match-patch";
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import "../../index.css";
 import { HighlightedError } from "../../types";
 import { useSpanEvalContext } from "../SpanEvalProvider";
@@ -7,8 +7,10 @@ import HighlightedText from "./HighlightedText";
 
 type PostEditContainerProps = {
   machineTranslation: string;
+  setMachineTranslation: (newTranslation: string) => void;
   highlightedError: HighlightedError[];
   onDiffTextUpdate: (newDiffText: React.ReactNode) => void;
+  modifiedText;
   setModifiedText: (newText: string) => void;
   addedErrorSpans: [] | any;
   setAddedErrorSpans: (newErrorSpans: [] | any) => void;
@@ -17,8 +19,10 @@ type PostEditContainerProps = {
 // **PostEditContainer Component**
 export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   machineTranslation,
+  setMachineTranslation,
   highlightedError,
   onDiffTextUpdate,
+  modifiedText,
   setModifiedText,
   addedErrorSpans,
   setAddedErrorSpans,
@@ -26,24 +30,91 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   const editableDivRef = useRef<HTMLDivElement>(null);
   const { translatedText, addNewErrorSpan } = useSpanEvalContext();
 
+  const caretOffsetRef = useRef<number>(0);
+
+  // Helper functions for caret management:
+  function getCaretCharacterOffsetWithin(element: Node): number {
+    let caretOffset = 0;
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(element);
+      preCaretRange.setEnd(range.endContainer, range.endOffset);
+      caretOffset = preCaretRange.toString().length;
+    }
+    return caretOffset;
+  }
+
+  function setCaretPosition(element: Node, offset: number) {
+    const range = document.createRange();
+    const selection = window.getSelection();
+    let currentOffset = 0;
+
+    function traverseNodes(node: Node): boolean {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const textLength = node.textContent?.length || 0;
+        if (currentOffset + textLength >= offset) {
+          range.setStart(node, offset - currentOffset);
+          range.collapse(true);
+          if (selection) {
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
+          return true;
+        }
+        currentOffset += textLength;
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          if (traverseNodes(node.childNodes[i])) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    traverseNodes(element);
+  }
+
+  /**
+   * Returns the selection start offset relative to the container's full text.
+   */
+  function getSelectionStartOffset(element: Node): number {
+    let caretOffset = 0;
+    const selection = window.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      const preCaretRange = range.cloneRange();
+      preCaretRange.selectNodeContents(element);
+      preCaretRange.setEnd(range.startContainer, range.startOffset);
+      caretOffset = preCaretRange.toString().length;
+    }
+    return caretOffset;
+  }
+
   const applyHighlight = () => {
     const selection = window.getSelection();
-    if (!selection?.rangeCount) return;
+    if (!selection?.rangeCount || !editableDivRef.current) return;
 
     // TODO: fix string index bug
-    const start = String(translatedText).indexOf(selection.toString());
+    // const start = String(modifiedText).indexOf(selection.toString()); // This line looks for the FIRST occurance of a higlighted word, so if you highlight an occurance that is later in the target string, the first occurance get's highlighted instead
+    const start = getSelectionStartOffset(editableDivRef.current);
+    const selectedText = selection.toString();
+    if (!selectedText.trim()) return;
+
     console.log(
       "AH",
-      translatedText.substring(start, start + selection.toString().length)
+      modifiedText.substring(start, start + selection.toString().length)
     );
-    const original_text = translatedText.substring(
+    const original_text = modifiedText.substring(
       start,
-      start + selection.toString().length
+      start + selectedText.length
     );
     addNewErrorSpan(
       original_text,
       start,
-      start + selection.toString().length,
+      start + selectedText.length,
       "Addition",
       "Minor"
     );
@@ -60,11 +131,31 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     ]);
   };
 
+  // const handleInput = () => {
+  //   const newText = editableDivRef.current?.innerText || "";
+  //   setModifiedText(newText);
+  //   console.log("newText", newText);
+  //   generateDiff(machineTranslation, newText);
+  // };
+
   const handleInput = () => {
-    const newText = editableDivRef.current?.innerText || "";
-    // setCurrentText(newText);
+    if (!editableDivRef.current) return;
+    // Save the caret offset before state update
+    caretOffsetRef.current = getCaretCharacterOffsetWithin(
+      editableDivRef.current
+    );
+    const newText = editableDivRef.current.innerText || "";
+    setModifiedText(newText);
+    console.log("newText", newText);
     generateDiff(machineTranslation, newText);
   };
+
+  // After modifiedText updates (and the re-render completes), restore the caret position.
+  useEffect(() => {
+    if (editableDivRef.current) {
+      setCaretPosition(editableDivRef.current, caretOffsetRef.current);
+    }
+  }, [modifiedText]);
 
   const generateDiff = (original: string, modified: string) => {
     const dmp = new diff_match_patch();
@@ -114,12 +205,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         <div
           className="post-edit-translation-field"
           ref={editableDivRef}
-          onInput={() => handleInput && handleInput()}
+          onInput={handleInput}
           contentEditable={true}
           suppressContentEditableWarning={true}
         >
           <HighlightedText
-            text={machineTranslation}
+            text={modifiedText}
             highlights={highlightedError}
             highlightKey="end_index_translation"
           />
