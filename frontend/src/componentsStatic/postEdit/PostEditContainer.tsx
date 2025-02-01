@@ -1,4 +1,9 @@
-import { DIFF_DELETE, DIFF_INSERT, diff_match_patch } from "diff-match-patch";
+import {
+  DIFF_DELETE,
+  DIFF_INSERT,
+  DIFF_EQUAL,
+  diff_match_patch,
+} from "diff-match-patch";
 import React, { useRef, useEffect } from "react";
 import "../../index.css";
 import { HighlightedError } from "../../types";
@@ -140,15 +145,80 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   const handleInput = () => {
     if (!editableDivRef.current) return;
-    // Save the caret offset before state update
+    // Save the caret offset before updating state.
     caretOffsetRef.current = getCaretCharacterOffsetWithin(
       editableDivRef.current
     );
     const newText = editableDivRef.current.innerText || "";
+
+    // ---------- Incremental Change Detection ----------
+    // Find the first index where the old and new texts differ.
+    let changePos = 0;
+    while (
+      changePos < modifiedText.length &&
+      changePos < newText.length &&
+      modifiedText[changePos] === newText[changePos]
+    ) {
+      changePos++;
+    }
+    // Find matching portion from the end.
+    let changeEndOld = modifiedText.length;
+    let changeEndNew = newText.length;
+    while (
+      changeEndOld > changePos &&
+      changeEndNew > changePos &&
+      modifiedText[changeEndOld - 1] === newText[changeEndNew - 1]
+    ) {
+      changeEndOld--;
+      changeEndNew--;
+    }
+    const delta = changeEndNew - changeEndOld; // positive for insertion, negative for deletion
+    console.log(
+      `Change region: [${changePos}, ${changeEndOld}) in old text, [${changePos}, ${changeEndNew}) in new text; delta = ${delta}`
+    );
+    // ---------- End Incremental Change Detection ----------
+
+    // Update spans based on the change.
+    const updatedSpans = addedErrorSpans.map((span: any) => {
+      const s = span.start_index_translation;
+      const e = span.end_index_translation;
+      let new_s = s;
+      let new_e = e;
+
+      if (e <= changePos) {
+        // The span is completely before the change region.
+        new_s = s;
+        new_e = e;
+      } else if (s >= changeEndOld) {
+        // The span is completely after the change region: shift it.
+        new_s = s + delta;
+        new_e = e + delta;
+      } else {
+        // The span overlaps the change region.
+        // If the span starts in the change region, set it to changePos.
+        new_s = s < changePos ? s : changePos;
+        // If the span extends beyond the change region, shift its end.
+        new_e = e >= changeEndOld ? e + delta : changePos;
+        if (new_e < new_s) new_e = new_s;
+      }
+      return {
+        ...span,
+        start_index_translation: new_s,
+        end_index_translation: new_e,
+      };
+    });
+
+    console.log("Updated spans:", updatedSpans);
+    setAddedErrorSpans(updatedSpans);
     setModifiedText(newText);
-    console.log("newText", newText);
-    generateDiff(machineTranslation, newText);
   };
+
+  // Restore caret after re-render.
+  useEffect(() => {
+    if (editableDivRef.current) {
+      setCaretPosition(editableDivRef.current, caretOffsetRef.current);
+    }
+  }, [modifiedText]);
 
   // After modifiedText updates (and the re-render completes), restore the caret position.
   useEffect(() => {
@@ -211,7 +281,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         >
           <HighlightedText
             text={modifiedText}
-            highlights={highlightedError}
+            highlights={addedErrorSpans}
             highlightKey="end_index_translation"
           />
         </div>
