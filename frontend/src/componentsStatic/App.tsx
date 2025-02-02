@@ -5,6 +5,8 @@ import { PostEditContainer } from "./postEdit/PostEditContainer";
 import { ScoringContainer } from "./scoring/ScoringContainer";
 import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
+import { HighlightedError } from "../types";
+
 import logo from "../assets/logo.svg";
 
 const App: React.FC = () => {
@@ -31,7 +33,9 @@ const App: React.FC = () => {
 
   const [modifiedText, setModifiedText] =
     React.useState<string>(machineTranslation);
-  const [addedErrorSpans, setAddedErrorSpans] = React.useState<[] | any>([]);
+  const [addedErrorSpans, setAddedErrorSpans] = React.useState<
+    HighlightedError[]
+  >([]);
   const [overallScore, setOverallScore] = React.useState<number>(50);
 
   // console.log(curEntryIdx);
@@ -153,6 +157,7 @@ const App: React.FC = () => {
         machineTranslation={machineTranslation}
         setMachineTranslation={setTranslatedText}
         highlightedError={highlightedError!}
+        setHighlightedError={setErrorSpans}
         onDiffTextUpdate={handleDiffTextUpdate}
         modifiedText={modifiedText}
         setModifiedText={setModifiedText}
