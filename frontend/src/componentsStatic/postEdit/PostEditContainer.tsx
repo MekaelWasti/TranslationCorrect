@@ -14,6 +14,7 @@ type PostEditContainerProps = {
   machineTranslation: string;
   setMachineTranslation: (newTranslation: string) => void;
   highlightedError: HighlightedError[];
+  setHighlightedError: (newError: HighlightedError[]) => void;
   onDiffTextUpdate: (newDiffText: React.ReactNode) => void;
   modifiedText;
   setModifiedText: (newText: string) => void;
@@ -26,6 +27,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   machineTranslation,
   setMachineTranslation,
   highlightedError,
+  setHighlightedError,
   onDiffTextUpdate,
   modifiedText,
   setModifiedText,
@@ -134,6 +136,17 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         error_severity: "Minor",
       },
     ]);
+
+    setHighlightedError([
+      ...highlightedError,
+      {
+        original_text: original_text,
+        start_index_translation: start,
+        end_index_translation: start + selection.toString().length,
+        error_type: "Addition",
+        error_severity: "Minor",
+      },
+    ]);
   };
 
   // const handleInput = () => {
@@ -144,6 +157,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   // };
 
   const handleInput = () => {
+    console.log(highlightedError);
     if (!editableDivRef.current) return;
     // Save the caret offset before updating state.
     caretOffsetRef.current = getCaretCharacterOffsetWithin(
@@ -260,6 +274,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     // Update state and pass the diffContent to parent component
     onDiffTextUpdate(diffContent);
+    generateDiff(machineTranslation, modifiedText);
   };
 
   //   Return JSX
@@ -281,7 +296,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         >
           <HighlightedText
             text={modifiedText}
-            highlights={addedErrorSpans}
+            // highlights={addedErrorSpans}
+            highlights={highlightedError}
             highlightKey="end_index_translation"
           />
         </div>

@@ -1,9 +1,9 @@
 export interface HighlightedError {
   original_text: string;
-  translated_text: string;
-  correct_text: string;
-  start_index_orig: number;
-  end_index_orig: number;
+  translated_text?: string;
+  correct_text?: string;
+  start_index_orig?: number;
+  end_index_orig?: number;
   start_index_translation: number;
   end_index_translation: number;
   error_type: string;
