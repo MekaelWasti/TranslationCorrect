@@ -193,7 +193,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     // ---------- End Incremental Change Detection ----------
 
     // Update spans based on the change.
-    const updatedSpans = addedErrorSpans.map((span: any) => {
+    // const updatedSpans = addedErrorSpans.map((span: any) => {
+    const updatedSpans = highlightedError.map((span: any) => {
       const s = span.start_index_translation;
       const e = span.end_index_translation;
       let new_s = s;
@@ -224,6 +225,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     console.log("Updated spans:", updatedSpans);
     setAddedErrorSpans(updatedSpans);
+    setHighlightedError(updatedSpans);
     setModifiedText(newText);
   };
 
