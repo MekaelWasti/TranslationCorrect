@@ -44,7 +44,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         const data = await response.json();
         if (response.ok) {
           alert("Log in successful!");
-          setSentenceData(data.dataset);
+          // Sort the data by our "id" column
+          const sortedData = data.dataset.sort((a, b) => a.id - b.id);
+          setSentenceData(sortedData);
           setDBUsername(username);
           console.log("Dataset:", data.dataset);
         } else {
