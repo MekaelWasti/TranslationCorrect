@@ -105,7 +105,8 @@ const App: React.FC = () => {
     // Reset States
     setOverallScore(50);
     setErrorSpans([]);
-    setSpanSeverity("Minor");
+    // setSpanSeverity("Minor");
+    setSpanSeverity("");
     setTranslatedText(machineTranslation);
   };
 

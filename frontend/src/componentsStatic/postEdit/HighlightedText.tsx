@@ -31,6 +31,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     setSelectedSpanIdx,
     updateSpanErrorType,
     errorSpans,
+    setSpanSeverity,
   } = useSpanEvalContext();
   const dropdownRef = useRef(null);
 
@@ -86,6 +87,18 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   ) => {
     // Prevent left click from opening drop down menu since it is used for custom insertion
     if (e.button === 0) {
+      setSelectedSpan(highlight.error_type);
+      setHoveredHighlight(highlight);
+      console.log(highlight.error_severity);
+      setSpanSeverity(highlight.error_severity);
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      setSpanPosition({
+        top: rect.top + window.scrollY,
+        left: rect.left + window.scrollX,
+      });
+      setSelectedSpanIdx(highlightIdx);
+
       return;
     }
 
