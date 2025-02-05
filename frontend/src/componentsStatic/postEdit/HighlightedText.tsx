@@ -106,6 +106,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
       setSpanDropdown(false);
     } else {
       setSelectedSpan(highlight.error_type);
+      setSpanSeverity(highlight.error_severity);
       setSpanDropdown(true);
       setHoveredHighlight(highlight);
 

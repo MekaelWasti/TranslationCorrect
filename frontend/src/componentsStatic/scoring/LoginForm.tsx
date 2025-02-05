@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 type LoginFormProps = {
   setSentenceData: React.Dispatch<
@@ -25,8 +25,30 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [isNewUser, setIsNewUser] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    const storedPassword = localStorage.getItem("password");
+    // localStorage.removeItem("username");
+    if (storedUsername && storedPassword) {
+      // console.log("AH LOGGED IN");
+      // setUsername(storedUsername);
+      setUsername(storedUsername);
+      setPassword(storedPassword);
+      setTimeout(() => {
+        // handleSubmit(storedUsername, storedPassword);
+      }, 0);
+    }
+  }, []);
+
+  const handleSubmit = async (
+    inputUsername?: string,
+    inputPassword?: string
+  ) => {
     setError(null); // Reset error state before submitting
+
+    const user = inputUsername || username;
+    const pass = inputPassword || password;
+    if (!user || !pass) return; // Prevent empty login attempt
 
     if (!isNewUser) {
       try {
@@ -37,12 +59,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ username, password }),
+            // body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username: user, password: pass }),
           }
         );
 
         const data = await response.json();
         if (response.ok) {
+          localStorage.setItem("username", user); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
+          localStorage.setItem("password", pass); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
           alert("Log in successful!");
           // Sort the data by our "id" column
           const sortedData = data.dataset.sort((a, b) => a.id - b.id);
@@ -89,7 +114,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          handleSubmit();
+          handleSubmit(username, password);
         }}
       >
         <div>

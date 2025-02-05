@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../index.css";
 import HighlightedText from "./postEdit/HighlightedText";
 import { PostEditContainer } from "./postEdit/PostEditContainer";
