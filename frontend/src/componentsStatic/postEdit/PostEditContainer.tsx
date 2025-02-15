@@ -227,7 +227,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setAddedErrorSpans(updatedSpans);
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
-    generateDiff(machineTranslation, modifiedText);
+    generateDiff(machineTranslation, newText);
   };
 
   // Restore caret after re-render.
