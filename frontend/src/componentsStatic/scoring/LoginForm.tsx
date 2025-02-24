@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 
 type LoginFormProps = {
+  setDataset: React.Dispatch<any>;
   setSentenceData: React.Dispatch<
     React.SetStateAction<
       {
@@ -17,6 +18,7 @@ type LoginFormProps = {
 };
 
 export const LoginForm: React.FC<LoginFormProps> = ({
+  setDataset,
   setSentenceData,
   setDBUsername,
 }) => {
@@ -68,12 +70,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         if (response.ok) {
           localStorage.setItem("username", user); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
           localStorage.setItem("password", pass); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
-          alert("Log in successful!");
+          // alert("Log in successful!");
+
           // Sort the data by our "id" column
-          const sortedData = data.dataset.sort((a, b) => a.id - b.id);
-          setSentenceData(sortedData);
+          Object.keys(data).forEach((key) => {
+            if (Array.isArray(data[key])) {
+              data[key].sort((a, b) => a.id - b.id);
+            }
+          });
+
+          setDataset(data);
+
           setDBUsername(username);
-          console.log("Dataset:", data.dataset);
+          // console.log("Dataset:", data.dataset);
         } else {
           setError(data.error || "Something went wrong. Please try again.");
         }

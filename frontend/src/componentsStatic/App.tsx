@@ -30,6 +30,7 @@ const App: React.FC = () => {
 
   const [username, setUsername] = useState<string | null>("undefined_user");
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
+  const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
 
   const [modifiedText, setModifiedText] =
     React.useState<string>(machineTranslation);
@@ -76,6 +77,7 @@ const App: React.FC = () => {
     const annotationKey = `${username}_annotations`;
 
     const requestBody = {
+      dataset: currentDatabase,
       id: sentenceID,
       [annotationKey]: packageHighlightedErrors, // Dynamic key placement
     };
@@ -124,6 +126,7 @@ const App: React.FC = () => {
         setUsername={setUsername}
         sentenceID={sentenceID}
         setSentenceID={setSentenceID}
+        setCurrentDatabase={setCurrentDatabase}
       />
 
       <div className="divider"></div>

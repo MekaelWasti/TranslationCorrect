@@ -14,6 +14,7 @@ type DatabaseSentenceViewProps = {
   setUsername: React.Dispatch<React.SetStateAction<string>>;
   sentenceID: string;
   setSentenceID: React.Dispatch<React.SetStateAction<string>>;
+  setCurrentDatabase: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
@@ -25,6 +26,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setUsername,
   sentenceID,
   setSentenceID,
+  setCurrentDatabase,
 }) => {
   const [sentenceData, setSentenceData] = useState<
     {
@@ -64,14 +66,41 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setModifedText(item.mt);
   };
 
+  const handleDatabaseFetch = async (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    const target = e.target as HTMLButtonElement;
+    const language = target.innerText;
+    console.log(language);
+
+    if (language === "Mandarin") {
+      setSentenceData(dataset.mandarin_dataset);
+      setCurrentDatabase("annotation-tool-dataset");
+    } else if (language === "Cantonese") {
+      setSentenceData(dataset.cantonese_dataset);
+      setCurrentDatabase("annotation-tool-cantonese");
+    }
+  };
+
   return (
     <div>
       <LoginForm
+        setDataset={setDataset}
         setSentenceData={setSentenceData}
         setDBUsername={setUsername}
       ></LoginForm>
       <div className="db-sentence-view">
         <table>
+          <thead>
+            <tr>
+              <th>
+                <button onClick={handleDatabaseFetch}>Mandarin</button>
+              </th>
+              <th>
+                <button onClick={handleDatabaseFetch}>Cantonese</button>
+              </th>
+            </tr>
+          </thead>
           <thead>
             <tr>
               <th>Index</th>
