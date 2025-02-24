@@ -70,7 +70,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         if (response.ok) {
           localStorage.setItem("username", user); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
           localStorage.setItem("password", pass); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
-          // alert("Log in successful!");
+          alert("Log in successful!");
 
           // Sort the data by our "id" column
           Object.keys(data).forEach((key) => {
