@@ -33,17 +33,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   
   
   const db = client.db('annotations');
-  const annotations_collection = db.collection<DocumentSchema>('annotation-tool-dataset');
 
   if (req.method === "POST") {
-    const { id, ...annotationData } = req.body; // Extract `_id` separately
+    const { dataset, id, ...annotationData } = req.body; // Extract `_id` separately
 
-    if (!id || Object.keys(annotationData).length === 0) {
+    if (!dataset || !id || Object.keys(annotationData).length === 0) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
     try {
       const documentId = ObjectId.createFromHexString(id);
+
+      const annotations_collection = db.collection<DocumentSchema>(dataset);
 
       const annotationKey = Object.keys(annotationData)[0];       
 
