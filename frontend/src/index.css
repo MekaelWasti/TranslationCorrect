@@ -817,6 +817,21 @@ table {
   border: 1px solid rgb(41, 41, 41);
   border-radius: 8px;
   width: 100%;
+  position: relative;
+}
+
+.first-header {
+  position: sticky;
+  /* top: 0; */
+  /* background-color: white; */
+  z-index: 2;
+}
+
+.second-header {
+  position: sticky;
+  top: 2.95em;
+  /* background-color: white; */
+  z-index: 1;
 }
 
 thead th {

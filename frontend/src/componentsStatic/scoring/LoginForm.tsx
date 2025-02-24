@@ -126,7 +126,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           handleSubmit(username, password);
         }}
       >
-        <div>
+        <div className="login-form-input">
           <label htmlFor="username">Username:</label>
           <input
             type="text"
@@ -137,7 +137,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           />
         </div>
 
-        <div>
+        <div className="login-form-input">
           <label htmlFor="password">Password:</label>
           <input
             type="password"

@@ -17,6 +17,11 @@ type DatabaseSentenceViewProps = {
   setCurrentDatabase: React.Dispatch<React.SetStateAction<string>>;
 };
 
+type DatasetType = {
+  mandarin_dataset: any[];
+  cantonese_dataset: any[];
+};
+
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setOrigText,
   setTranslatedText,
@@ -39,7 +44,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     }[]
   >([]);
 
-  const [dataset, setDataset] = useState();
+  const [dataset, setDataset] = useState<DatasetType | null>(null);
 
   // useEffect(() => {
   //   fetch("/mandarin_dataset.json")
@@ -73,11 +78,13 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     const language = target.innerText;
     console.log(language);
 
-    if (language === "Mandarin") {
-      setSentenceData(dataset.mandarin_dataset);
+    if (!dataset) {
+      console.error("Dataset is undefined");
+    } else if (language === "Mandarin") {
+      setSentenceData(dataset.mandarin_dataset ?? []);
       setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
-      setSentenceData(dataset.cantonese_dataset);
+      setSentenceData(dataset.cantonese_dataset ?? []);
       setCurrentDatabase("annotation-tool-cantonese");
     }
   };
@@ -92,17 +99,18 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       <div className="db-sentence-view">
         <table>
           <thead>
-            <tr>
+            <tr className="first-header">
               <th>
                 <button onClick={handleDatabaseFetch}>Mandarin</button>
               </th>
               <th>
                 <button onClick={handleDatabaseFetch}>Cantonese</button>
               </th>
+              <th></th>
+              <th></th>
+              <th></th>
             </tr>
-          </thead>
-          <thead>
-            <tr>
+            <tr className="second-header">
               <th>Index</th>
               <th>Sentence</th>
               <th>MT</th>
