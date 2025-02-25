@@ -26,6 +26,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [password, setPassword] = useState<string>("");
   const [isNewUser, setIsNewUser] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [successfullLogin, setSuccessfullLogin] = useState<boolean>(false);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -70,7 +71,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         if (response.ok) {
           localStorage.setItem("username", user); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
           localStorage.setItem("password", pass); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
-          alert("Log in successful!");
+          // alert("Log in successful!");
+          setError("Log in successful!");
+          setSuccessfullLogin(true);
 
           // Sort the data by our "id" column
           Object.keys(data).forEach((key) => {
@@ -85,10 +88,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           // console.log("Dataset:", data.dataset);
         } else {
           setError(data.error || "Something went wrong. Please try again.");
+          setSuccessfullLogin(false);
         }
       } catch (err) {
         console.error("Error during login", err);
         setError("An unexpected error occurred. Please try again.");
+        setSuccessfullLogin(false);
       }
     } else {
       try {
@@ -109,10 +114,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           setIsNewUser(false); // Switch back to login mode
         } else {
           setError(data.error || "Something went wrong. Please try again.");
+          setSuccessfullLogin(false);
         }
       } catch (err) {
         console.error("Error during login/registration:", err);
         setError("An unexpected error occurred. Please try again.");
+        setSuccessfullLogin(false);
       }
     }
   };
@@ -148,7 +155,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           />
         </div>
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+        {!successfullLogin && error && <p style={{ color: "red" }}>{error}</p>}
+        {successfullLogin && <p style={{ color: "green" }}>{error}</p>}
 
         <button className="login-button" type="submit">
           {isNewUser ? "Register" : "Log In"}

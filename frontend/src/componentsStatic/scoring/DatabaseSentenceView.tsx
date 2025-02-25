@@ -15,6 +15,8 @@ type DatabaseSentenceViewProps = {
   sentenceID: string;
   setSentenceID: React.Dispatch<React.SetStateAction<string>>;
   setCurrentDatabase: React.Dispatch<React.SetStateAction<string>>;
+  sentenceData: any[];
+  setSentenceData: React.Dispatch<any>;
 };
 
 type DatasetType = {
@@ -32,18 +34,9 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   sentenceID,
   setSentenceID,
   setCurrentDatabase,
+  sentenceData,
+  setSentenceData,
 }) => {
-  const [sentenceData, setSentenceData] = useState<
-    {
-      _id: string;
-      id: number;
-      src: string;
-      mt: string;
-      ref: string;
-      annotations: Object;
-    }[]
-  >([]);
-
   const [dataset, setDataset] = useState<DatasetType | null>(null);
 
   // useEffect(() => {

@@ -32,6 +32,17 @@ const App: React.FC = () => {
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
 
+  const [sentenceData, setSentenceData] = useState<
+    {
+      _id: string;
+      id: number;
+      src: string;
+      mt: string;
+      ref: string;
+      annotations: Object;
+    }[]
+  >([]);
+
   const [modifiedText, setModifiedText] =
     React.useState<string>(machineTranslation);
   const [addedErrorSpans, setAddedErrorSpans] = React.useState<
@@ -110,6 +121,19 @@ const App: React.FC = () => {
     // setSpanSeverity("Minor");
     setSpanSeverity("");
     setTranslatedText(machineTranslation);
+
+    // Update sentenceData row for live staus update
+    console.log("AH", packageHighlightedErrors);
+    setSentenceData((prevData) => {
+      return prevData.map((row) =>
+        row._id === sentenceID
+          ? {
+              ...row,
+              annotations: { [annotationKey]: packageHighlightedErrors },
+            }
+          : row
+      );
+    });
   };
 
   // **JSX**
@@ -127,6 +151,8 @@ const App: React.FC = () => {
         sentenceID={sentenceID}
         setSentenceID={setSentenceID}
         setCurrentDatabase={setCurrentDatabase}
+        sentenceData={sentenceData}
+        setSentenceData={setSentenceData}
       />
 
       <div className="divider"></div>
