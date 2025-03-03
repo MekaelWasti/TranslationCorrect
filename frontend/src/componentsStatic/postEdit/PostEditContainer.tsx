@@ -9,6 +9,7 @@ import "../../index.css";
 import { HighlightedError } from "../../types";
 import { useSpanEvalContext } from "../SpanEvalProvider";
 import HighlightedText from "./HighlightedText";
+import { SpanScoreDropdown } from "../scoring/SpanScoreDropdown";
 
 type PostEditContainerProps = {
   machineTranslation: string;
@@ -283,12 +284,17 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   return (
     <div>
       <div className="post-edit-section">
-        <h3>Post-Editing</h3>
-        <button className={`insert-span-button`} onClick={applyHighlight}>
-          Insert Span
-        </button>
-        <button className="custom-correction-button">Custom Correction</button>
-
+        <div className="post-edit-section-header">
+          <h3>Post-Editing</h3>
+        </div>
+        <div className="post-edit-section-header-buttons">
+          <button className="start-annotation-button">Start Annotation</button>
+          <button className={`insert-span-button`} onClick={applyHighlight}>
+            Insert Span
+          </button>
+          {/* <button className="custom-correction-button">Custom Correction</button> */}
+          <SpanScoreDropdown />
+        </div>
         <div
           className="post-edit-translation-field"
           ref={editableDivRef}

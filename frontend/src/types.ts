@@ -20,13 +20,24 @@ export interface HighlightedError {
 //   "No Error": "#2f3472"
 // };
 
+// export const colorMappings: { [key: string]: string } = {
+//   "Addition": "#FF5733",
+//   "Omission": "#00A0F0",
+//   "Mistranslation": "#59c00a",
+//   "Untranslated": "#D3365A",
+//   "Grammar": "#8B4513",
+//   "Spelling": "#800080",
+//   "Typography": "#2f3472",
+//   "Unintelligible": "#800000"
+// };
+
 export const colorMappings: { [key: string]: string } = {
   "Addition": "#FF5733",
   "Omission": "#00A0F0",
   "Mistranslation": "#59c00a",
   "Untranslated": "#D3365A",
-  "Grammar": "#8B4513",
-  "Spelling": "#800080",
-  "Typography": "#2f3472",
-  "Unintelligible": "#800000"
+  "Grammar": "#D2691E",
+  "Spelling": "#9B59B6",
+  "Typography": "#1ABC9C",
+  "Unintelligible": "#F39C12"
 };

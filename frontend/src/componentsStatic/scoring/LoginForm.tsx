@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Toast from "../common/toast";
 
 type LoginFormProps = {
   setDataset: React.Dispatch<any>;
@@ -28,6 +29,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successfullLogin, setSuccessfullLogin] = useState<boolean>(false);
 
+  // Add toast notification for login/registration
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastType, setToastType] = useState<"success" | "error">("success");
+
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const storedPassword = localStorage.getItem("password");
@@ -35,10 +41,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     if (storedUsername && storedPassword) {
       // console.log("AH LOGGED IN");
       // setUsername(storedUsername);
+      console.log("Found stored credentials, attempting auto-login");
       setUsername(storedUsername);
       setPassword(storedPassword);
+
+      // Auto-login with stored credentials
+      // Use a small timeout to ensure state is updated before submitting
       setTimeout(() => {
-        // handleSubmit(storedUsername, storedPassword);
+        handleSubmit(storedUsername, storedPassword);
       }, 0);
     }
   }, []);
@@ -48,6 +58,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     inputPassword?: string
   ) => {
     setError(null); // Reset error state before submitting
+
+    // Reset toast state before showing new toast
+    setShowToast(false);
+    // Small delay to ensure state update before showing new toast
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const user = inputUsername || username;
     const pass = inputPassword || password;
@@ -72,8 +87,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           localStorage.setItem("username", user); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
           localStorage.setItem("password", pass); // TEMPORARY METHOD TO PRESERVE LOG IN STATE
           // alert("Log in successful!");
-          setError("Log in successful!");
+
+          // Store credentials in localStorage for persistent login
+          localStorage.setItem("username", user);
+          localStorage.setItem("password", pass);
+
+          // Set login state
+          setToastMessage("Login successful!");
+          setToastType("success");
+          setShowToast(true);
           setSuccessfullLogin(true);
+          setDBUsername(user); // Important: use the user parameter, not username state
 
           // Sort the data by our "id" column
           Object.keys(data).forEach((key) => {
@@ -84,15 +108,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
           setDataset(data);
 
-          setDBUsername(username);
           // console.log("Dataset:", data.dataset);
         } else {
           setError(data.error || "Something went wrong. Please try again.");
+          setToastMessage(data.error || "Login failed");
+          setToastType("error");
+          setShowToast(true);
           setSuccessfullLogin(false);
         }
       } catch (err) {
         console.error("Error during login", err);
         setError("An unexpected error occurred. Please try again.");
+        setToastMessage("An unexpected error occurred. Please try again.");
+        setToastType("error");
+        setShowToast(true);
         setSuccessfullLogin(false);
       }
     } else {
@@ -114,11 +143,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           setIsNewUser(false); // Switch back to login mode
         } else {
           setError(data.error || "Something went wrong. Please try again.");
+          setToastMessage(data.error || "Registration failed");
+          setToastType("error");
+          setShowToast(true);
           setSuccessfullLogin(false);
         }
       } catch (err) {
         console.error("Error during login/registration:", err);
         setError("An unexpected error occurred. Please try again.");
+        setToastMessage("An unexpected error occurred. Please try again.");
+        setToastType("error");
+        setShowToast(true);
         setSuccessfullLogin(false);
       }
     }
@@ -126,7 +161,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <div className="login-form">
-      <h2>{isNewUser ? "Register" : "Log In"}</h2>
+      {showToast && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setShowToast(false)}
+        />
+      )}
+      <h1 className="login-form-title">
+        {isNewUser
+          ? "Please Register to Annotate"
+          : "Please Log In to Annotate"}
+      </h1>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -134,7 +180,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         }}
       >
         <div className="login-form-input">
-          <label htmlFor="username">Username:</label>
+          <label className="login-username-label" htmlFor="username">
+            Username:
+          </label>
           <input
             type="text"
             id="username"
@@ -145,7 +193,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </div>
 
         <div className="login-form-input">
-          <label htmlFor="password">Password:</label>
+          <label className="login-password-label" htmlFor="password">
+            Password:
+          </label>
           <input
             type="password"
             id="password"
@@ -158,25 +208,36 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         {!successfullLogin && error && <p style={{ color: "red" }}>{error}</p>}
         {successfullLogin && <p style={{ color: "green" }}>{error}</p>}
 
-        <button className="login-button" type="submit">
-          {isNewUser ? "Register" : "Log In"}
-        </button>
-        <button className="login-button">Log Out</button>
+        <div className="login-buttons-container">
+          <button
+            className={`login-button ${successfullLogin ? "active" : ""}`}
+            type="submit"
+          >
+            {isNewUser ? "Register" : "Log In"}
+          </button>
+          {/* <button className="login-button" type="button"> */}
+          {/* Log Out */}
+          {/* </button> */}
+        </div>
       </form>
 
-      <p>
-        {isNewUser ? "Already have an account?" : "Don't have an account?"}{" "}
+      <div className="login-toggle-container">
+        <span>
+          <h3>
+            {isNewUser ? "Already have an account?" : "Don't have an account?"}
+          </h3>
+        </span>
         <button
           className="login-button"
           type="button"
           onClick={() => {
             setIsNewUser(!isNewUser);
-            setError(null); // Clear any existing errors
+            setError(null);
           }}
         >
           {isNewUser ? "Log In" : "Register"}
         </button>
-      </p>
+      </div>
     </div>
   );
 };

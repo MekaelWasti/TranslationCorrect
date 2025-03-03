@@ -6,8 +6,15 @@ import { ScoringContainer } from "./scoring/ScoringContainer";
 import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
 import { HighlightedError } from "../types";
+import { LoginForm } from "./scoring/LoginForm";
 
 import logo from "../assets/logo.svg";
+
+// Type Definitions
+type DatasetType = {
+  mandarin_dataset: any[];
+  cantonese_dataset: any[];
+};
 
 const App: React.FC = () => {
   const {
@@ -28,9 +35,12 @@ const App: React.FC = () => {
     setSpanScores,
   } = useSpanEvalContext();
 
-  const [username, setUsername] = useState<string | null>("undefined_user");
+  const [username, setUsername] = useState<string | null>("");
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
+
+  // Dataset
+  const [dataset, setDataset] = useState<DatasetType | null>(null);
 
   const [sentenceData, setSentenceData] = useState<
     {
@@ -59,8 +69,55 @@ const App: React.FC = () => {
     setDiffContent(parsedDiff);
   };
 
+  const handleGoToLastAnnotation = () => {
+    const annotationKey = `${username}_annotations`;
+    const lastCompletedIndex = sentenceData
+      .map((item, index) => ({
+        index,
+        completed: item.annotations && item.annotations[annotationKey],
+      }))
+      .reverse()
+      .find((item) => item.completed);
+
+    if (lastCompletedIndex) {
+      const lastUnannotatedSentence =
+        sentenceData[lastCompletedIndex.index + 1];
+      setOrigText(lastUnannotatedSentence.src);
+      setTranslatedText(lastUnannotatedSentence.mt);
+      setDiffContent(lastUnannotatedSentence.mt);
+      setSentenceID(lastUnannotatedSentence._id);
+      setModifiedText(lastUnannotatedSentence.mt);
+
+      // Remove active class from all rows first
+      document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
+        row.classList.remove("active-db-row");
+      });
+
+      // Find the row element that was clicked on
+      const rowElement = document.querySelector(
+        `.db-row-${lastUnannotatedSentence.id}`
+      );
+      // Apply highlight to the clicked row
+      if (rowElement) {
+        rowElement.classList.add("active-db-row");
+        // Scroll the row into view
+        rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  };
+
   const handleSubmitAnnotation = () => {
     // Create the annotation object
+
+    // Scroll to the database viewer
+    const dbViewerElement = document.querySelector(".db-sentence-view");
+    if (dbViewerElement) {
+      dbViewerElement.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+
     console.log(username);
 
     const packageHighlightedErrors = {
@@ -115,6 +172,40 @@ const App: React.FC = () => {
         console.error("Error:", error);
       });
 
+    // After successful submission, find the next unannotated sentence
+    const currentIndex = sentenceData.findIndex(
+      (item) => item._id === sentenceID
+    );
+    const nextSentence = sentenceData
+      .slice(currentIndex + 1)
+      .find(
+        (item) =>
+          !item.annotations || !item.annotations[`${username}_annotations`]
+      );
+
+    if (nextSentence) {
+      // Automatically select the next unannotated sentence
+      setOrigText(nextSentence.src);
+      setTranslatedText(nextSentence.mt);
+      setDiffContent(nextSentence.mt);
+      setSentenceID(nextSentence._id);
+      setModifiedText(nextSentence.mt);
+    }
+
+    // Remove active class from all rows first
+    document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
+      row.classList.remove("active-db-row");
+    });
+
+    // Find the row element that was clicked on
+    const rowElement = document.querySelector(`.db-row-${nextSentence.id}`);
+    // Apply highlight to the clicked row
+    if (rowElement) {
+      rowElement.classList.add("active-db-row");
+      // Scroll the row into view
+      rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
     // Reset States
     setOverallScore(50);
     setErrorSpans([]);
@@ -139,78 +230,111 @@ const App: React.FC = () => {
   // **JSX**
   return (
     <div className="body">
-      <img className="logo_1" src={logo} alt="" />
+      <div className="logo-nav-container">
+        <img className="logo_1" src={logo} alt="" />
+      </div>
       {/* DB Viewer */}
-      <DatabaseSentenceView
-        setOrigText={setOrigText}
-        setTranslatedText={setTranslatedText}
-        setDiffContent={setDiffContent}
-        setModifedText={setModifiedText}
-        username={username}
-        setUsername={setUsername}
-        sentenceID={sentenceID}
-        setSentenceID={setSentenceID}
-        setCurrentDatabase={setCurrentDatabase}
-        sentenceData={sentenceData}
-        setSentenceData={setSentenceData}
-      />
+      <div className="divider"></div>
 
-      <div className="divider"></div>
-      <h3>Source</h3>
-      <div>
-        <HighlightedText
-          text={referenceTranslation}
-          // text={machineTranslation}
-          highlights={originalHighlightedError!}
-          highlightKey="end_index_orig"
-          disableEdit={true}
-        />
-      </div>
-      <br />
-      <br />
-      <h3>Machine Translation</h3>
-      <div>
-        <div className="machine-translation-output">
-          {diffContent && (
-            <HighlightedText
-              text={diffContent}
-              // text={machineTranslation}
-              highlights={originalHighlightedError!}
-              highlightKey="end_index_translation"
-              disableEdit={true}
+      <div className="annotate-container">
+        {username ? (
+          <div className="annotate-container-annotate">
+            <DatabaseSentenceView
+              setOrigText={setOrigText}
+              setTranslatedText={setTranslatedText}
+              setDiffContent={setDiffContent}
+              setModifedText={setModifiedText}
+              username={username}
+              setUsername={setUsername}
+              sentenceID={sentenceID}
+              setSentenceID={setSentenceID}
+              setCurrentDatabase={setCurrentDatabase}
+              sentenceData={sentenceData}
+              setSentenceData={setSentenceData}
+              dataset={dataset}
+              setDataset={setDataset}
             />
-          )}
+            <div className="go-to-last-annotated-button-container">
+              <button
+                className="go-to-last-annotated-button"
+                onClick={handleGoToLastAnnotation}
+              >
+                Go To Last Annotated
+              </button>
+            </div>
+            <div className="divider"></div>
+            <div className="source-mt-sentence-display">
+              <div className="source-sentence-display-text">
+                <h3>Source</h3>
+                <HighlightedText
+                  text={referenceTranslation}
+                  // text={machineTranslation}
+                  highlights={originalHighlightedError!}
+                  highlightKey="end_index_orig"
+                  disableEdit={true}
+                />
+              </div>
+              <div className="machine-translation-display-text">
+                <h3>Machine Translation</h3>
+                <div className="machine-translation-output">
+                  {diffContent && (
+                    <HighlightedText
+                      text={diffContent}
+                      // text={machineTranslation}
+                      highlights={originalHighlightedError!}
+                      highlightKey="end_index_translation"
+                      disableEdit={true}
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="divider"></div>
+            {/* Scoring Section */}
+            {/* <ScoringContainer
+              overallScore={overallScore}
+              setOverallScore={setOverallScore}
+            /> */}
+            <PostEditContainer
+              machineTranslation={machineTranslation}
+              setMachineTranslation={setTranslatedText}
+              highlightedError={highlightedError!}
+              setHighlightedError={setErrorSpans}
+              onDiffTextUpdate={handleDiffTextUpdate}
+              modifiedText={modifiedText}
+              setModifiedText={setModifiedText}
+              addedErrorSpans={addedErrorSpans}
+              setAddedErrorSpans={setAddedErrorSpans}
+            />
+            {/* Translation Submission Section */}
+            <div className="accept-translation-section">
+              {/* <button onClick={() => setEntryIdx(curEntryIdx + 1)}> */}
+              <button onClick={() => handleSubmitAnnotation()}>
+                Submit Annotation
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="annotate-container-login">
+            <LoginForm
+              setDataset={setDataset}
+              setSentenceData={setSentenceData}
+              setDBUsername={setUsername}
+            ></LoginForm>
+          </div>
+        )}
+
+        <div className="footer">
+          <div className="divider"></div>
+          <div>
+            {/* <button className="reset-entry-button" onClick={() => setEntryIdx(0)}>
+          Restart to entry #0
+          </button> */}
+          </div>
+          <div className="send-feedback">
+            <a>Send Feedback</a>
+          </div>
         </div>
-      </div>
-      <div className="divider"></div>
-      <PostEditContainer
-        machineTranslation={machineTranslation}
-        setMachineTranslation={setTranslatedText}
-        highlightedError={highlightedError!}
-        setHighlightedError={setErrorSpans}
-        onDiffTextUpdate={handleDiffTextUpdate}
-        modifiedText={modifiedText}
-        setModifiedText={setModifiedText}
-        addedErrorSpans={addedErrorSpans}
-        setAddedErrorSpans={setAddedErrorSpans}
-      />
-      {/* Scoring Section */}
-      <ScoringContainer
-        overallScore={overallScore}
-        setOverallScore={setOverallScore}
-      />
-      <div className="accept-translation-section">
-        {/* <button onClick={() => setEntryIdx(curEntryIdx + 1)}> */}
-        <button onClick={() => handleSubmitAnnotation()}>
-          Submit Annotation
-        </button>
-      </div>
-      <div className="divider"></div>
-      <div>
-        <button onClick={() => setEntryIdx(0)}>Restart to entry #0</button>
-      </div>
-      <div className="send-feedback">
-        <a>Send Feedback</a>
       </div>
     </div>
   );

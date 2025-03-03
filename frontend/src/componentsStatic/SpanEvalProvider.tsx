@@ -64,12 +64,15 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
 
   // const origText = input[curEntryIdx].original_text;
   const [origText, setOrigText] = useState<string>(
-    input[curEntryIdx].original_text
+    // input[curEntryIdx].original_text
+    "Please select a sentence to annotate from the database." // Want empty string for original text
   );
   const [translatedText, setTranslatedText] = useState<string>(
-    input[curEntryIdx].translated_text
+    // input[curEntryIdx].translated_text
+    "Please select a sentence to annotate from the database." // Want empty string for translated text
   );
-  const originalSpans = input[curEntryIdx].errorSpans;
+  // const originalSpans = input[curEntryIdx].errorSpans;
+  const originalSpans = []; // Want empty array for spans
   const [errorSpans, setErrorSpans] = useState<HighlightedError[]>(
     // input[curEntryIdx].errorSpans
     []
