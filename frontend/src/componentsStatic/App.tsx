@@ -109,14 +109,14 @@ const App: React.FC = () => {
   const handleSubmitAnnotation = () => {
     // Create the annotation object
 
-    // Scroll to the database viewer
-    const dbViewerElement = document.querySelector(".db-sentence-view");
-    if (dbViewerElement) {
-      dbViewerElement.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
+    // // Scroll to the database viewer
+    // const dbViewerElement = document.querySelector(".db-sentence-view");
+    // if (dbViewerElement) {
+    //   dbViewerElement.scrollIntoView({
+    //     behavior: "smooth",
+    //     block: "start",
+    //   });
+    // }
 
     console.log(username);
 
@@ -203,7 +203,7 @@ const App: React.FC = () => {
     if (rowElement) {
       rowElement.classList.add("active-db-row");
       // Scroll the row into view
-      rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+      // rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 
     // Reset States
