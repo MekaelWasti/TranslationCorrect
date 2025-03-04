@@ -4,7 +4,7 @@ import {
   DIFF_EQUAL,
   diff_match_patch,
 } from "diff-match-patch";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useCallback } from "react";
 import "../../index.css";
 import { HighlightedError } from "../../types";
 import { useSpanEvalContext } from "../SpanEvalProvider";
@@ -21,6 +21,25 @@ type PostEditContainerProps = {
   setModifiedText: (newText: string) => void;
   addedErrorSpans: [] | any;
   setAddedErrorSpans: (newErrorSpans: [] | any) => void;
+};
+
+// Debounce function
+const useDebounce = (callback: Function, delay: number) => {
+  const timerRef = useRef<number | null>(null);
+
+  const debouncedCallback = useCallback(
+    (...args: any[]) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = window.setTimeout(() => {
+        callback(...args);
+      }, delay);
+    },
+    [callback, delay]
+  );
+
+  return debouncedCallback;
 };
 
 // **PostEditContainer Component**
@@ -101,70 +120,18 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     return caretOffset;
   }
 
-  const applyHighlight = () => {
-    const selection = window.getSelection();
-    if (!selection?.rangeCount || !editableDivRef.current) return;
-
-    // TODO: fix string index bug
-    // const start = String(modifiedText).indexOf(selection.toString()); // This line looks for the FIRST occurance of a higlighted word, so if you highlight an occurance that is later in the target string, the first occurance get's highlighted instead
-    const start = getSelectionStartOffset(editableDivRef.current);
-    const selectedText = selection.toString();
-    if (!selectedText.trim()) return;
-
-    console.log(
-      "AH",
-      modifiedText.substring(start, start + selection.toString().length)
-    );
-    const original_text = modifiedText.substring(
-      start,
-      start + selectedText.length
-    );
-    addNewErrorSpan(
-      original_text,
-      start,
-      start + selectedText.length,
-      "Addition",
-      "Minor"
-    );
-
-    setAddedErrorSpans([
-      ...addedErrorSpans,
-      {
-        original_text: original_text,
-        start_index_translation: start,
-        end_index_translation: start + selection.toString().length,
-        error_type: "Addition",
-        error_severity: "Minor",
-      },
-    ]);
-
-    setHighlightedError([
-      ...highlightedError,
-      {
-        original_text: original_text,
-        start_index_translation: start,
-        end_index_translation: start + selection.toString().length,
-        error_type: "Addition",
-        error_severity: "Minor",
-      },
-    ]);
-  };
-
-  // const handleInput = () => {
-  //   const newText = editableDivRef.current?.innerText || "";
-  //   setModifiedText(newText);
-  //   console.log("newText", newText);
-  //   generateDiff(machineTranslation, newText);
-  // };
-
   const handleInput = () => {
-    console.log(highlightedError);
+    console.log("Handling input...");
+    console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
     // Save the caret offset before updating state.
     caretOffsetRef.current = getCaretCharacterOffsetWithin(
       editableDivRef.current
     );
     const newText = editableDivRef.current.innerText || "";
+
+    // Log the new text for debugging
+    console.log("New text after input:", newText);
 
     // ---------- Incremental Change Detection ----------
     // Find the first index where the old and new texts differ.
@@ -229,7 +196,102 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
     generateDiff(machineTranslation, newText);
+
+    console.log("machineTranslation", machineTranslation);
+    console.log("newText", newText);
   };
+
+  const handleCompositionStart = () => {
+    console.log("Composition started");
+  };
+
+  const applyHighlight = () => {
+    const selection = window.getSelection();
+    if (!selection?.rangeCount || !editableDivRef.current) return;
+
+    // TODO: fix string index bug
+    // const start = String(modifiedText).indexOf(selection.toString()); // This line looks for the FIRST occurance of a higlighted word, so if you highlight an occurance that is later in the target string, the first occurance get's highlighted instead
+    const start = getSelectionStartOffset(editableDivRef.current);
+    const selectedText = selection.toString();
+    if (!selectedText.trim()) return;
+
+    console.log(
+      "AH",
+      modifiedText.substring(start, start + selection.toString().length)
+    );
+    const original_text = modifiedText.substring(
+      start,
+      start + selectedText.length
+    );
+    addNewErrorSpan(
+      original_text,
+      start,
+      start + selectedText.length,
+      "Addition",
+      "Minor"
+    );
+
+    setAddedErrorSpans([
+      ...addedErrorSpans,
+      {
+        original_text: original_text,
+        start_index_translation: start,
+        end_index_translation: start + selection.toString().length,
+        error_type: "Addition",
+        error_severity: "Minor",
+      },
+    ]);
+
+    setHighlightedError([
+      ...highlightedError,
+      {
+        original_text: original_text,
+        start_index_translation: start,
+        end_index_translation: start + selection.toString().length,
+        error_type: "Addition",
+        error_severity: "Minor",
+      },
+    ]);
+  };
+
+  const debouncedHandleInput = useDebounce(handleInput, 300);
+
+  const handleCompositionUpdate = (event: CompositionEvent) => {
+    console.log("Composition updated:", event.data);
+  };
+
+  const handleCompositionEnd = (event: CompositionEvent) => {
+    console.log("Composition ended:", event.data);
+    handleInput(); // Call handleInput to process the final input
+  };
+
+  useEffect(() => {
+    const editableDiv = editableDivRef.current;
+    if (editableDiv) {
+      editableDiv.addEventListener("compositionstart", handleCompositionStart);
+      editableDiv.addEventListener(
+        "compositionupdate",
+        handleCompositionUpdate
+      );
+      editableDiv.addEventListener("compositionend", handleCompositionEnd);
+      editableDiv.addEventListener("input", debouncedHandleInput);
+    }
+
+    return () => {
+      if (editableDiv) {
+        editableDiv.removeEventListener(
+          "compositionstart",
+          handleCompositionStart
+        );
+        editableDiv.removeEventListener(
+          "compositionupdate",
+          handleCompositionUpdate
+        );
+        editableDiv.removeEventListener("compositionend", handleCompositionEnd);
+        editableDiv.removeEventListener("input", debouncedHandleInput);
+      }
+    };
+  }, [debouncedHandleInput]);
 
   // Restore caret after re-render.
   useEffect(() => {

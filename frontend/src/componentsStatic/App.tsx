@@ -211,7 +211,7 @@ const App: React.FC = () => {
     setErrorSpans([]);
     // setSpanSeverity("Minor");
     setSpanSeverity("");
-    setTranslatedText(machineTranslation);
+    // setTranslatedText(machineTranslation);
 
     // Update sentenceData row for live staus update
     console.log("AH", packageHighlightedErrors);
@@ -226,7 +226,9 @@ const App: React.FC = () => {
       );
     });
   };
-
+  useEffect(() => {
+    console.log("Updated machineTranslation:", machineTranslation);
+  }, [machineTranslation]);
   // **JSX**
   return (
     <div className="body">
