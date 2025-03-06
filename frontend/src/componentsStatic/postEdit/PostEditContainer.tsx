@@ -4,7 +4,7 @@ import {
   DIFF_EQUAL,
   diff_match_patch,
 } from "diff-match-patch";
-import React, { useRef, useEffect, useCallback } from "react";
+import React, { useRef, useEffect, useCallback, useState } from "react";
 import "../../index.css";
 import { HighlightedError } from "../../types";
 import { useSpanEvalContext } from "../SpanEvalProvider";
@@ -58,6 +58,11 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   const { translatedText, addNewErrorSpan } = useSpanEvalContext();
 
   const caretOffsetRef = useRef<number>(0);
+  const [showInsertButton, setShowInsertButton] = useState(false);
+  const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0 });
+  const [highlightInserted, setHighlightInserted] = useState(false);
+
+  const [isComposing, setIsComposing] = useState(false);
 
   // Helper functions for caret management:
   function getCaretCharacterOffsetWithin(element: Node): number {
@@ -120,8 +125,22 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     return caretOffset;
   }
 
+  const handleCompositionStart = () => {
+    console.log("Composition started");
+    setIsComposing(true);
+  };
+
+  const handleCompositionEnd = (event: CompositionEvent) => {
+    console.log("Composition ended:", event.data);
+    setIsComposing(false);
+    // Process final input once composition is complete
+    handleInput();
+  };
+
   const handleInput = () => {
-    console.log("Handling input...");
+    // Don't process input if we're in the middle of an IME composition
+    if (isComposing) return;
+
     console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
     // Save the caret offset before updating state.
@@ -196,16 +215,10 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
     generateDiff(machineTranslation, newText);
-
-    console.log("machineTranslation", machineTranslation);
-    console.log("newText", newText);
-  };
-
-  const handleCompositionStart = () => {
-    console.log("Composition started");
   };
 
   const applyHighlight = () => {
+    setHighlightInserted(true);
     const selection = window.getSelection();
     if (!selection?.rangeCount || !editableDivRef.current) return;
 
@@ -260,9 +273,68 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     console.log("Composition updated:", event.data);
   };
 
-  const handleCompositionEnd = (event: CompositionEvent) => {
-    console.log("Composition ended:", event.data);
-    handleInput(); // Call handleInput to process the final input
+  // TODO:
+
+  // React event handler for use with React components
+  const handleReactMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
+    console.log("Mouse up (React)");
+    // Handle React-specific logic here
+  };
+
+  useEffect(() => {
+    document.addEventListener("mouseup", handleNativeMouseUp);
+    return () => {
+      document.removeEventListener("mouseup", handleNativeMouseUp);
+    };
+  }, []);
+
+  // Native event handler for use with addEventListener
+  const handleNativeMouseUp = (event: MouseEvent) => {
+    console.log("Mouse up (native)");
+
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim().length > 0) {
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      setShowInsertButton(true);
+
+      const handleMouseMove = (event: MouseEvent) => {
+        const mouseX = event.clientX;
+        const leftBound = rect.left + window.scrollX;
+        const rightBound = rect.right + window.scrollX;
+
+        // Constrain button's horizontal position within highlight
+        const constrainedLeft = Math.min(
+          Math.max(mouseX, leftBound),
+          rightBound
+        );
+
+        setButtonPosition({
+          top: rect.bottom + window.scrollY,
+          left: constrainedLeft,
+        });
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+
+      // Remove the mousemove listener when mouse released
+      document.addEventListener(
+        "mouseup",
+        () => {
+          document.removeEventListener("mousemove", handleMouseMove);
+        },
+        { once: true }
+      );
+    } else {
+      setButtonPosition({ top: 0, left: 0 });
+      setShowInsertButton(false);
+    }
+  };
+
+  const handleInsertSpanClick = () => {
+    applyHighlight();
+    setShowInsertButton(false);
+    window.getSelection()?.removeAllRanges();
   };
 
   useEffect(() => {
@@ -342,6 +414,13 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     onDiffTextUpdate(diffContent);
   };
 
+  useEffect(() => {
+    document.addEventListener("mouseup", handleNativeMouseUp);
+    return () => {
+      document.removeEventListener("mouseup", handleNativeMouseUp);
+    };
+  }, []);
+
   //   Return JSX
   return (
     <div>
@@ -363,14 +442,29 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           onInput={handleInput}
           contentEditable={true}
           suppressContentEditableWarning={true}
+          onMouseUp={handleReactMouseUp}
         >
           <HighlightedText
             text={modifiedText}
             // highlights={addedErrorSpans}
             highlights={highlightedError}
             highlightKey="end_index_translation"
+            highlightInserted={highlightInserted}
           />
         </div>
+        <button
+          className={`insert-span-popup-button ${
+            showInsertButton ? "visible" : ""
+          }`}
+          style={{
+            position: "absolute",
+            top: buttonPosition.top + 20,
+            left: `calc(${buttonPosition.left}px - 3.45svw)`,
+          }}
+          onClick={handleInsertSpanClick}
+        >
+          +
+        </button>
       </div>
     </div>
   );

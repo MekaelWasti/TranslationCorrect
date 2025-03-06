@@ -226,9 +226,6 @@ const App: React.FC = () => {
       );
     });
   };
-  useEffect(() => {
-    console.log("Updated machineTranslation:", machineTranslation);
-  }, [machineTranslation]);
   // **JSX**
   return (
     <div className="body">

@@ -18,6 +18,7 @@ type HighlightTextProps = {
     | "end_index_translation"
     | "error_type";
   disableEdit?: boolean;
+  highlightInserted?: boolean;
 };
 
 const HighlightedText: React.FC<HighlightTextProps> = ({
@@ -25,6 +26,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   highlights,
   highlightKey,
   disableEdit = false,
+  highlightInserted = false,
 }) => {
   const {
     selectedSpanIdx,
@@ -80,6 +82,23 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     setHoveredHighlight(null);
   };
 
+  // useEffect(() => {
+  //   const handleMouseMove = (e: MouseEvent) => {
+  //     if (highlightInserted) {
+  //       console.log("AH", highlightInserted);
+  //       // setSpanDropdown(true);
+  //     }
+  //   };
+
+  //   // Add event listener for mouse move
+  //   document.addEventListener("click", handleMouseMove);
+
+  //   // Cleanup function to remove event listener
+  //   return () => {
+  //     document.removeEventListener("click", handleMouseMove);
+  //   };
+  // }, [highlightInserted]);
+
   const handleMouseClick = (
     e: React.MouseEvent<HTMLSpanElement>,
     highlight: HighlightedError,
@@ -118,6 +137,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     }
     setHoveredHighlight(null);
     setSelectedSpanIdx(highlightIdx);
+    // setHighlightInserted(false);
     e.stopPropagation();
   };
 
@@ -289,6 +309,8 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
         <div
           ref={dropdownRef}
           className="span-dropdown"
+          onContextMenu={(event) => event.preventDefault()}
+          contentEditable={false}
           style={{
             position: "absolute",
             left: spanPosition!.left - 20,
