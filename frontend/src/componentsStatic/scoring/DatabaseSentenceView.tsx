@@ -20,6 +20,8 @@ type DatabaseSentenceViewProps = {
   sentenceID: string;
   setSentenceID: React.Dispatch<React.SetStateAction<string>>;
   setCurrentDatabase: React.Dispatch<React.SetStateAction<string>>;
+  setAddedErrorSpans: React.Dispatch<React.SetStateAction<any[]>>;
+  setHighlightedError: React.Dispatch<React.SetStateAction<any[]>>;
   sentenceData: any[];
   setSentenceData: React.Dispatch<any>;
   setDataset: React.Dispatch<React.SetStateAction<DatasetType | null>>;
@@ -36,6 +38,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   sentenceID,
   setSentenceID,
   setCurrentDatabase,
+  setAddedErrorSpans,
+  setHighlightedError,
   sentenceData,
   setSentenceData,
   setDataset,
@@ -79,6 +83,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setDiffContent(item.mt);
     setSentenceID(item._id);
     setModifedText(item.mt);
+    setAddedErrorSpans([]);
+    setHighlightedError([]);
   };
 
   const handleDatabaseFetch = async (

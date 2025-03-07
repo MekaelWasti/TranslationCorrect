@@ -731,13 +731,6 @@ li {
 }
 
 .post-edit-section-header-buttons {
-  /* display: flex; */
-  /* align-items: end; */
-  /* justify-content: end; */
-  /* width: 100%; */
-}
-
-.post-edit-section-header-buttons {
   display: flex;
   justify-content: start;
   width: 100%;
@@ -748,7 +741,7 @@ li {
   /* padding: 0 0 0 0; */
 }
 
-#span_severities {
+#span_severities:disabled {
   background-color: #222222;
   border: none;
   /* margin: 2vh 2vw 1vh 2vw; */
@@ -765,18 +758,14 @@ li {
   cursor: pointer;
 }
 
-#span_severities {
-  background-color: #333333;
-  color: rgb(255, 0, 0);
-}
-
 #span_severities > option {
   text-align: center;
+  background-color: #222222;
 }
 
 .span-severity-dropdown-section {
   /* padding: 0vh 0vw 12% 0vw; */
-  background-color: red;
+  /* background-color: red; */
 }
 
 .span-severity-dropdown-section > select {
@@ -861,7 +850,8 @@ li {
 .insert-span-button,
 .start-annotation-button,
 .login-button,
-.go-to-last-annotated-button {
+.go-to-last-annotated-button,
+.clear-spans-button {
   margin: 2vh 2vw 1vh 2vw;
   padding: 1vh 3vw 1vh 3vw;
   border-radius: 7px;
@@ -871,6 +861,25 @@ li {
   font-size: 1rem;
   font-weight: 550;
   cursor: pointer;
+}
+
+.clear-spans-button {
+  color: white;
+  margin-right: 0;
+  transition: all 0.25s ease-in-out;
+}
+
+.clear-spans-button:hover {
+  background-color: #cb3737;
+}
+
+/* Add styles for confirmation state */
+.clear-spans-button-confirm {
+  background-color: #d00a0a;
+}
+
+.clear-spans-button-confirm:hover {
+  background-color: #ff0000;
 }
 
 .go-to-last-annotated-button:hover {
@@ -1442,14 +1451,25 @@ input {
   /* text-align: center; */
 }
 
+.span-score-section {
+  height: 100%;
+  /* background-color: red; */
+}
+
+.span-score-section > div {
+  height: 100%;
+  /* background-color: blue; */
+  /* padding: 1vh 3vw 1vh 3vw; */
+}
+
 select {
   text-align: center;
   text-align-last: center; /* Centers the selected option in modern browsers */
   /* display: block; */
   margin: 2vh 0vw 1vh 0vw;
   padding: 1vh 3vw 1vh 3vw;
-  width: 20vw;
-  max-width: 100%;
+  /* width: 15vw; */
+  /* max-width: 100%; */
   height: 100%;
   max-height: 100%;
   border: none;

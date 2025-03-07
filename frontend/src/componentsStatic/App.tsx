@@ -118,6 +118,13 @@ const App: React.FC = () => {
     //   });
     // }
 
+    const selectElement = document.querySelector(".span-score-section select");
+    if (selectElement) {
+      (selectElement as HTMLElement).style.backgroundColor = "#222222";
+      (selectElement as HTMLElement).style.color = "#ffffff";
+      (selectElement as HTMLSelectElement).value = "Minor";
+    }
+
     console.log(username);
 
     const packageHighlightedErrors = {
@@ -243,6 +250,8 @@ const App: React.FC = () => {
               setTranslatedText={setTranslatedText}
               setDiffContent={setDiffContent}
               setModifedText={setModifiedText}
+              setAddedErrorSpans={setAddedErrorSpans}
+              setHighlightedError={setErrorSpans}
               username={username}
               setUsername={setUsername}
               sentenceID={sentenceID}
@@ -304,6 +313,8 @@ const App: React.FC = () => {
               setModifiedText={setModifiedText}
               addedErrorSpans={addedErrorSpans}
               setAddedErrorSpans={setAddedErrorSpans}
+              diffContent={diffContent}
+              setDiffContent={setDiffContent}
             />
             {/* Translation Submission Section */}
             <div className="accept-translation-section">

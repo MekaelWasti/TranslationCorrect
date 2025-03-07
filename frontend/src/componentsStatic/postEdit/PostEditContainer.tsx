@@ -21,6 +21,8 @@ type PostEditContainerProps = {
   setModifiedText: (newText: string) => void;
   addedErrorSpans: [] | any;
   setAddedErrorSpans: (newErrorSpans: [] | any) => void;
+  diffContent: React.ReactNode;
+  setDiffContent: (newDiffContent: React.ReactNode) => void;
 };
 
 // Debounce function
@@ -53,6 +55,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   setModifiedText,
   addedErrorSpans,
   setAddedErrorSpans,
+  diffContent,
+  setDiffContent,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
   const { translatedText, addNewErrorSpan } = useSpanEvalContext();
@@ -63,6 +67,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   const [highlightInserted, setHighlightInserted] = useState(false);
 
   const [isComposing, setIsComposing] = useState(false);
+
+  // Add state for clear button
+  const [clearButtonClicked, setClearButtonClicked] = useState(false);
 
   // Helper functions for caret management:
   function getCaretCharacterOffsetWithin(element: Node): number {
@@ -249,7 +256,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       {
         original_text: original_text,
         start_index_translation: start,
-        end_index_translation: start + selection.toString().length,
+        end_index_translation: start + selectedText.length,
         error_type: "Addition",
         error_severity: "Minor",
       },
@@ -260,11 +267,41 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       {
         original_text: original_text,
         start_index_translation: start,
-        end_index_translation: start + selection.toString().length,
+        end_index_translation: start + selectedText.length,
         error_type: "Addition",
         error_severity: "Minor",
       },
     ]);
+  };
+
+  const handleClearSpansButton = () => {
+    if (clearButtonClicked) {
+      // Second click - perform the clear operation
+      setAddedErrorSpans([]);
+      setHighlightedError([]);
+      setModifiedText(machineTranslation);
+      setDiffContent(machineTranslation);
+
+      // Reset the span severity select button
+      const selectElement = document.querySelector(
+        ".span-score-section select"
+      );
+      if (selectElement) {
+        (selectElement as HTMLElement).style.backgroundColor = "#222222";
+        (selectElement as HTMLElement).style.color = "#ffffff";
+        (selectElement as HTMLSelectElement).value = "Minor";
+      }
+
+      setClearButtonClicked(false); // Reset the state
+    } else {
+      // First click - just update the state
+      setClearButtonClicked(true);
+
+      // Reset after 3 seconds if second click doesn't happen
+      setTimeout(() => {
+        setClearButtonClicked(false);
+      }, 3000);
+    }
   };
 
   const debouncedHandleInput = useDebounce(handleInput, 300);
@@ -435,6 +472,14 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           </button>
           {/* <button className="custom-correction-button">Custom Correction</button> */}
           <SpanScoreDropdown />
+          <button
+            className={`clear-spans-button ${
+              clearButtonClicked ? "clear-spans-button-confirm" : ""
+            }`}
+            onClick={handleClearSpansButton}
+          >
+            {clearButtonClicked ? "Clear?" : "Clear"}
+          </button>
         </div>
         <div
           className="post-edit-translation-field"

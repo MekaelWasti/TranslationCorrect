@@ -34,8 +34,8 @@ export const SpanScoreDropdown: React.FC = () => {
       </div> */}
       <div className="">
         <select
-          name=""
-          id=""
+          name="span-severitiy-dropdown"
+          id="span_severities"
           value={spanSeverity}
           onChange={(e) =>
             handleSpanScoreChange(selectedSpanIdx, e.target.value)

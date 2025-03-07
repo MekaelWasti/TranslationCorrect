@@ -104,6 +104,15 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     highlight: HighlightedError,
     highlightIdx: number
   ) => {
+    // Update the select element's background color on any mouse click
+    const selectElement = document.querySelector(".span-score-section select");
+    if (selectElement) {
+      (selectElement as HTMLElement).style.backgroundColor =
+        colorMappings[highlight.error_type];
+      // Set text color to white for better visibility
+      (selectElement as HTMLElement).style.color = "#ffffff";
+    }
+
     // Prevent left click from opening drop down menu since it is used for custom insertion
     if (e.button === 0) {
       setSelectedSpan(highlight.error_type);
@@ -160,6 +169,15 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     console.log(errorSpans);
 
     setSpanDropdown(false);
+
+    // Update the select element's background color on error type selection
+    const selectElement = document.querySelector(".span-score-section select");
+    if (selectElement) {
+      (selectElement as HTMLElement).style.backgroundColor =
+        colorMappings[type];
+      // Set text color to white for better visibility
+      (selectElement as HTMLElement).style.color = "#ffffff";
+    }
   };
 
   // console.log(highlights);
