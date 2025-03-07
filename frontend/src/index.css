@@ -1501,17 +1501,24 @@ select:hover {
   border-radius: 8px;
   /* width: 5vw; */ /*this is pretty good */
   width: 7vw;
+  width: 90px;
   height: 2.5vw;
+  height: 31px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.5vw;
+  font-size: 20px;
   font-weight: 600;
   cursor: pointer;
   /* transition: all 0.35s ease-in-out, opacity 0.2s ease-in-out; */
   transition: opacity 0.35s ease-in-out; /* Add transition for opacity */
   pointer-events: none;
   opacity: 0;
+  /* Temp */
+  background-color: #4e97f6;
+  color: white;
+  /* Temp */
 }
 
 .insert-span-popup-button.visible {
@@ -1521,6 +1528,7 @@ select:hover {
 
 .insert-span-popup-button:hover {
   background-color: #4e97f6;
+  background-color: #6cc1f3;
   color: white;
   font-weight: 600;
 }

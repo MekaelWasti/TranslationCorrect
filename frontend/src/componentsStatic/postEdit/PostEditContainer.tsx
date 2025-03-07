@@ -352,16 +352,18 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         });
       };
 
-      document.addEventListener("mousemove", handleMouseMove);
+      handleMouseMove(event);
 
-      // Remove the mousemove listener when mouse released
-      document.addEventListener(
-        "mouseup",
-        () => {
-          document.removeEventListener("mousemove", handleMouseMove);
-        },
-        { once: true }
-      );
+      // document.addEventListener("mousemove", handleMouseMove);
+
+      // // Remove the mousemove listener when mouse released
+      // document.addEventListener(
+      //   "mouseup",
+      //   () => {
+      //     document.removeEventListener("mousemove", handleMouseMove);
+      //   },
+      //   { once: true }
+      // );
     } else {
       setButtonPosition({ top: 0, left: 0 });
       setShowInsertButton(false);
@@ -504,7 +506,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           style={{
             position: "absolute",
             top: buttonPosition.top + 20,
-            left: `calc(${buttonPosition.left}px - 3.45svw)`,
+            left: `calc(${buttonPosition.left}px - 43px)`,
           }}
           onClick={handleInsertSpanClick}
         >
