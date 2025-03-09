@@ -465,7 +465,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     <div>
       <div className="post-edit-section">
         <div className="post-edit-section-header">
-          <h3>Post-Editing</h3>
+          <h2>Post-Editing</h2>
         </div>
         <div className="post-edit-section-header-buttons">
           <button className="start-annotation-button">Start Annotation</button>

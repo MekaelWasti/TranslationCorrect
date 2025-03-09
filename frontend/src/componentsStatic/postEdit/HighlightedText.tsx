@@ -39,6 +39,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
 
   const [selectedSpan, setSelectedSpan] = useState("");
   const [spanDropdown, setSpanDropdown] = useState(false);
+  const [dropdownAnimation, setDropdownAnimation] = useState("");
   const [mousePosition, setMousePosition] = useState<{
     x: number;
     y: number;
@@ -51,6 +52,8 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   } | null>(null);
   const [hoveredHighlight, setHoveredHighlight] =
     useState<HighlightedError | null>(null);
+
+  const [spanDropdownVisible, setSpanDropdownVisible] = useState(false);
 
   const handleMouseEnterSpan = (
     e: React.MouseEvent<HTMLSpanElement>,
@@ -131,11 +134,23 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     }
 
     if (highlight.error_type === selectedSpan && spanDropdown) {
-      setSpanDropdown(false);
+      setDropdownAnimation("fade-out");
+      setTimeout(() => {
+        setSpanDropdown(false);
+        setDropdownAnimation("");
+      }, 250);
     } else {
       setSelectedSpan(highlight.error_type);
       setSpanSeverity(highlight.error_severity);
+
+      // First set the dropdown to visible, then apply the animation in the next frame
       setSpanDropdown(true);
+
+      // Use requestAnimationFrame to ensure the DOM has updated before applying the animation
+      requestAnimationFrame(() => {
+        setDropdownAnimation("fade-in");
+      });
+
       setHoveredHighlight(highlight);
 
       const rect = e.currentTarget.getBoundingClientRect();
@@ -152,8 +167,16 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
 
   useEffect(() => {
     const handleClickOutsideDropDown = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setSpanDropdown(false);
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        spanDropdown
+      ) {
+        setDropdownAnimation("fade-out");
+        setTimeout(() => {
+          setSpanDropdown(false);
+          setDropdownAnimation("");
+        }, 250);
       }
     };
 
@@ -304,20 +327,65 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
 
   const { elements } = getHighlightedText(React.Children.toArray(text), ranges);
 
+  // Effect to handle automatic dropdown opening when a span is inserted
+  useEffect(() => {
+    if (highlightInserted && highlights.length > 0 && !spanDropdown) {
+      // Get the last inserted highlight (assuming it's the most recently added one)
+      const lastHighlight = highlights[highlights.length - 1];
+
+      // Set the selected span to the last highlight's error type
+      setSelectedSpan(lastHighlight.error_type);
+      setSpanSeverity(lastHighlight.error_severity);
+
+      // Set the selected span index to the last highlight's index
+      setSelectedSpanIdx(highlights.length - 1);
+
+      // Calculate position for the dropdown
+      // We need to find the DOM element for the highlight
+      // This is a bit tricky since we don't have a direct reference
+      // Let's use a small timeout to ensure the DOM has been updated
+      setTimeout(() => {
+        const highlightElements = document.querySelectorAll(".highlight");
+        if (highlightElements.length > 0) {
+          // Get the last highlight element
+          const lastHighlightElement =
+            highlightElements[highlightElements.length - 1];
+          const rect = lastHighlightElement.getBoundingClientRect();
+
+          setSpanPosition({
+            top: rect.top + window.scrollY,
+            left: rect.left + window.scrollX,
+          });
+
+          // Show the dropdown
+          setSpanDropdown(true);
+
+          // Apply the fade-in animation
+          requestAnimationFrame(() => {
+            setDropdownAnimation("fade-in");
+          });
+        }
+      }, 50);
+    }
+  }, [highlightInserted, highlights]);
+
   return (
     <div>
       {elements}
       {hoveredHighlight && mousePosition && (
         <div className="error-tooltip" style={tooltipStyle}>
-          <p style={{ color: colorMappings[hoveredHighlight.error_type] }}>
-            <strong>Error Type:</strong> {hoveredHighlight.error_type}
-          </p>
-          <p>
-            <strong>Original Text:</strong> {hoveredHighlight.original_text}
-          </p>
-          <p>
-            <strong>Translated Text:</strong> {hoveredHighlight.translated_text}
-          </p>
+          <h3 style={{ color: colorMappings[hoveredHighlight.error_type] }}>
+            Error Type: {hoveredHighlight.error_type}
+          </h3>
+          <div className="error-tooltip-text-display">
+            <p>
+              <strong>Original Text:</strong> {hoveredHighlight.original_text}
+            </p>
+            <p>
+              <strong>Translated Text:</strong>{" "}
+              {hoveredHighlight.translated_text}
+            </p>
+          </div>
           <p>
             <strong>Correct Text:</strong> {hoveredHighlight.correct_text}
           </p>
@@ -326,13 +394,13 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
       {spanDropdown && mousePosition && (
         <div
           ref={dropdownRef}
-          className="span-dropdown"
+          className={`span-dropdown ${dropdownAnimation}`}
           onContextMenu={(event) => event.preventDefault()}
           contentEditable={false}
           style={{
             position: "absolute",
             left: spanPosition!.left - 20,
-            top: spanPosition!.top + 25,
+            top: spanPosition!.top + 40,
           }}
         >
           <ul>

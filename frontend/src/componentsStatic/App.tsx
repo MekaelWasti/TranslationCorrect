@@ -7,6 +7,7 @@ import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
 import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
+import { ErrorSuggestion } from "./ErrorSuggestion";
 
 import logo from "../assets/logo.svg";
 
@@ -271,9 +272,26 @@ const App: React.FC = () => {
               </button>
             </div>
             <div className="divider"></div>
-            <div className="source-mt-sentence-display">
+
+            <ErrorSuggestion
+              referenceTranslation={referenceTranslation}
+              machineTranslation={machineTranslation}
+              highlightedError={highlightedError}
+              originalHighlightedError={originalHighlightedError}
+              setTranslatedText={setTranslatedText}
+              setErrorSpans={setErrorSpans}
+              handleDiffTextUpdate={handleDiffTextUpdate}
+              modifiedText={modifiedText}
+              setModifiedText={setModifiedText}
+              addedErrorSpans={addedErrorSpans}
+              setAddedErrorSpans={setAddedErrorSpans}
+              diffContent={diffContent}
+              setDiffContent={setDiffContent}
+            />
+            <div className="divider"></div>
+            {/* <div className="source-mt-sentence-display">
               <div className="source-sentence-display-text">
-                <h3>Source</h3>
+                <h2>Source</h2>
                 <HighlightedText
                   text={referenceTranslation}
                   // text={machineTranslation}
@@ -283,7 +301,7 @@ const App: React.FC = () => {
                 />
               </div>
               <div className="machine-translation-display-text">
-                <h3>Machine Translation</h3>
+                <h2>Machine Translation</h2>
                 <div className="machine-translation-output">
                   {diffContent && (
                     <HighlightedText
@@ -297,13 +315,13 @@ const App: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="divider"></div>
+            <div className="divider"></div> */}
             {/* Scoring Section */}
             {/* <ScoringContainer
               overallScore={overallScore}
               setOverallScore={setOverallScore}
             /> */}
-            <PostEditContainer
+            {/* <PostEditContainer
               machineTranslation={machineTranslation}
               setMachineTranslation={setTranslatedText}
               highlightedError={highlightedError!}
@@ -315,7 +333,7 @@ const App: React.FC = () => {
               setAddedErrorSpans={setAddedErrorSpans}
               diffContent={diffContent}
               setDiffContent={setDiffContent}
-            />
+            /> */}
             {/* Translation Submission Section */}
             <div className="accept-translation-section">
               {/* <button onClick={() => setEntryIdx(curEntryIdx + 1)}> */}
