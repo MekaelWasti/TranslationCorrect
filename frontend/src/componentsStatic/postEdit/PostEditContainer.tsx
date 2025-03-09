@@ -460,6 +460,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isComposing) {
+      handleInput();
+    }
+  }, [isComposing]);
+
   //   Return JSX
   return (
     <div>
