@@ -7,6 +7,8 @@ import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
 import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import logo from "../assets/logo.svg";
 
@@ -97,12 +99,19 @@ const App: React.FC = () => {
       const rowElement = document.querySelector(
         `.db-row-${lastUnannotatedSentence.id}`
       );
+
       // Apply highlight to the clicked row
       if (rowElement) {
         rowElement.classList.add("active-db-row");
         // Scroll the row into view
         rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+
+      // Show success toast
+      toast.success("Navigated to the next unannotated sentence");
+    } else {
+      // Show info toast if no more unannotated sentences
+      toast.info("No more unannotated sentences found");
     }
   };
 
@@ -160,6 +169,8 @@ const App: React.FC = () => {
     console.log(requestBody);
 
     // Submit the annotation object
+    // Show loading toast
+    const toastId = toast.loading("Submitting annotation...");
 
     fetch(
       "https://translation-correct-annotation-task-dutd.vercel.app/api/submit_annotation",
@@ -171,67 +182,88 @@ const App: React.FC = () => {
         body: JSON.stringify(requestBody),
       }
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         console.log("Success:", data);
+        // Update the loading toast to a success toast
+        toast.update(toastId, {
+          render: "Annotation submitted successfully!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+          closeButton: true,
+        });
+
+        // After successful submission, find the next unannotated sentence
+        const currentIndex = sentenceData.findIndex(
+          (item) => item._id === sentenceID
+        );
+        const nextSentence = sentenceData
+          .slice(currentIndex + 1)
+          .find(
+            (item) =>
+              !item.annotations || !item.annotations[`${username}_annotations`]
+          );
+
+        if (nextSentence) {
+          // Automatically select the next unannotated sentence
+          setOrigText(nextSentence.src);
+          setTranslatedText(nextSentence.mt);
+          setDiffContent(nextSentence.mt);
+          setSentenceID(nextSentence._id);
+          setModifiedText(nextSentence.mt);
+        }
+
+        // Remove active class from all rows first
+        document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
+          row.classList.remove("active-db-row");
+        });
+
+        // Find the row element that was clicked on
+        const rowElement = document.querySelector(`.db-row-${nextSentence.id}`);
+        // Apply highlight to the clicked row
+        if (rowElement) {
+          rowElement.classList.add("active-db-row");
+          // Scroll the row into view
+          // rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        // Reset States
+        setOverallScore(50);
+        setErrorSpans([]);
+        // setSpanSeverity("Minor");
+        setSpanSeverity("");
+        // setTranslatedText(machineTranslation);
+
+        // Update sentenceData row for live staus update
+        console.log("AH", packageHighlightedErrors);
+        setSentenceData((prevData) => {
+          return prevData.map((row) =>
+            row._id === sentenceID
+              ? {
+                  ...row,
+                  annotations: { [annotationKey]: packageHighlightedErrors },
+                }
+              : row
+          );
+        });
       })
       .catch((error) => {
         console.error("Error:", error);
+        // Update the loading toast to an error toast
+        toast.update(toastId, {
+          render: `Error submitting annotation: ${error.message}`,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+          closeButton: true,
+        });
       });
-
-    // After successful submission, find the next unannotated sentence
-    const currentIndex = sentenceData.findIndex(
-      (item) => item._id === sentenceID
-    );
-    const nextSentence = sentenceData
-      .slice(currentIndex + 1)
-      .find(
-        (item) =>
-          !item.annotations || !item.annotations[`${username}_annotations`]
-      );
-
-    if (nextSentence) {
-      // Automatically select the next unannotated sentence
-      setOrigText(nextSentence.src);
-      setTranslatedText(nextSentence.mt);
-      setDiffContent(nextSentence.mt);
-      setSentenceID(nextSentence._id);
-      setModifiedText(nextSentence.mt);
-    }
-
-    // Remove active class from all rows first
-    document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
-      row.classList.remove("active-db-row");
-    });
-
-    // Find the row element that was clicked on
-    const rowElement = document.querySelector(`.db-row-${nextSentence.id}`);
-    // Apply highlight to the clicked row
-    if (rowElement) {
-      rowElement.classList.add("active-db-row");
-      // Scroll the row into view
-      // rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    // Reset States
-    setOverallScore(50);
-    setErrorSpans([]);
-    // setSpanSeverity("Minor");
-    setSpanSeverity("");
-    // setTranslatedText(machineTranslation);
-
-    // Update sentenceData row for live staus update
-    console.log("AH", packageHighlightedErrors);
-    setSentenceData((prevData) => {
-      return prevData.map((row) =>
-        row._id === sentenceID
-          ? {
-              ...row,
-              annotations: { [annotationKey]: packageHighlightedErrors },
-            }
-          : row
-      );
-    });
   };
   // **JSX**
   return (
@@ -346,6 +378,18 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 };
