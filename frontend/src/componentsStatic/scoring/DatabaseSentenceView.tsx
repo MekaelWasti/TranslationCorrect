@@ -201,7 +201,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     } else if (language === "Cantonese") {
       // Check if user should use pivot dataset
       const un = username.trim().toLowerCase();
-      const isPivot = un === 'aiden';
+      // const isPivot = un === 'aiden';
+      const isPivot = false;
       console.log("isPivot:", isPivot);
       setSentenceData(isPivot ? dataset.cantonese_pivot_dataset ?? [] : dataset.cantonese_dataset ?? []);
       setCurrentDatabase(isPivot ? "annotation-tool-cantonese-pivot" : "annotation-tool-cantonese");
