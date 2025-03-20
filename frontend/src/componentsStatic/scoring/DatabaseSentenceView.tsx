@@ -13,6 +13,7 @@ type DatasetType = {
 type DatabaseSentenceViewProps = {
   setOrigText: React.Dispatch<React.SetStateAction<string>>;
   setTranslatedText: React.Dispatch<React.SetStateAction<string>>;
+  setReferenceText: React.Dispatch<React.SetStateAction<string>>;
   setDiffContent: React.Dispatch<React.SetStateAction<React.ReactNode>>;
   setModifedText: React.Dispatch<React.SetStateAction<string>>;
   username: string;
@@ -31,6 +32,7 @@ type DatabaseSentenceViewProps = {
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setOrigText,
   setTranslatedText,
+  setReferenceText,
   setDiffContent,
   setModifedText,
   username,
@@ -80,6 +82,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     console.log(item);
     setOrigText(item.src);
     setTranslatedText(item.mt);
+    setReferenceText(item.ref);
     setDiffContent(item.mt);
     setSentenceID(item._id);
     setModifedText(item.mt);

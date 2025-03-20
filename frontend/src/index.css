@@ -894,6 +894,20 @@ li {
   /* background-color: red; */
 }
 
+.post-edit-translation-field > div {
+  line-height: 3.7vh;
+}
+
+.post-edit-translation-field div {
+  transition: all 0.15s ease-in-out;
+}
+
+.post-edit-translation-field-active div {
+  font-style: italic;
+  opacity: 0.8;
+  color: #ffffffa9;
+}
+
 .post-edit-translation-field:focus {
   outline: none;
 }
@@ -918,6 +932,7 @@ li {
 
 .error-suggestion-button {
   margin-left: 0;
+  margin-top: 3.5vh;
 }
 .error-suggestion-button:hover {
   background-color: #a6ff00;
@@ -1599,6 +1614,46 @@ select:hover {
   font-weight: 600;
 }
 
+.delete-span-button {
+  position: absolute;
+  background-color: #cf2020;
+  color: white;
+  border: none;
+  /* border-top-right-radius: 8px;
+  border-bottom-right-radius: 0px;
+  border-bottom-left-radius: 0px;
+  border-top-left-radius: 8px; */
+  border-radius: 5px;
+  min-width: 10px;
+  width: 24px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.35s ease-in-out;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  transform: translateY(5px);
+}
+
+.delete-span-button.visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.delete-span-button:hover {
+  background-color: #ff3333;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 3px 7px rgba(0, 0, 0, 0.3);
+}
+
 ::selection {
   background-color: rgb(255, 255, 255);
   color: black;
@@ -1645,7 +1700,13 @@ select:hover {
   width: 100%;
 }
 
+.error-suggestion-display > div > span {
+  line-height: 3.7vh;
+}
+
 span.highlight {
+  z-index: 10 !important;
+  line-height: 0;
 }
 
 .error-suggestion-display span.highlight {
@@ -1669,6 +1730,108 @@ span.highlight {
     width: 0;
   }
   to {
+    width: 100%;
+  }
+}
+
+/* Drag handle styling */
+.drag-handle {
+  position: absolute;
+  width: 8px;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.3);
+  cursor: ew-resize;
+  z-index: 10;
+  top: 0;
+}
+
+.drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.drag-handle-start {
+  left: 0;
+  border-radius: 4px 0 0 4px;
+}
+
+.drag-handle-end {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+}
+
+.highlight-dragging {
+  opacity: 0.8;
+  cursor: ew-resize !important;
+}
+
+/* Add a subtle transition for smoother visual updates */
+.highlight {
+  transition: background-color 0.1s ease;
+}
+
+.annotation-timer-display {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  background-color: #222;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  animation: timer-pulse 2s infinite;
+}
+
+.annotation-timer-display span {
+  margin-left: 5px;
+}
+
+@keyframes timer-pulse {
+  0% {
+    background-color: #222;
+  }
+  50% {
+    background-color: #555;
+  }
+  100% {
+    background-color: #222;
+  }
+}
+
+.start-annotation-button:hover {
+  background-color: #357dcb;
+  color: white;
+}
+
+.start-annotation-button.timer-active {
+  background-color: #e27e4a;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.start-annotation-button.timer-active:after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background-color: #ff9f66;
+  animation: timer-progress 2s infinite;
+}
+
+.start-annotation-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+@keyframes timer-progress {
+  0% {
+    width: 0%;
+  }
+  100% {
     width: 100%;
   }
 }

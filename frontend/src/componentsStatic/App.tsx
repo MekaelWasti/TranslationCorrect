@@ -8,6 +8,8 @@ import { useSpanEvalContext } from "./SpanEvalProvider";
 import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
 import { ErrorSuggestion } from "./ErrorSuggestion";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import logo from "../assets/logo.svg";
 
@@ -19,10 +21,12 @@ type DatasetType = {
 
 const App: React.FC = () => {
   const {
-    origText: referenceTranslation,
+    origText: sourceText,
     setOrigText,
     translatedText: machineTranslation,
     setTranslatedText,
+    referenceText,
+    setReferenceText,
     originalSpans: originalHighlightedError,
     errorSpans: highlightedError,
     setErrorSpans,
@@ -61,10 +65,45 @@ const App: React.FC = () => {
   >([]);
   const [overallScore, setOverallScore] = React.useState<number>(50);
 
-  // console.log(curEntryIdx);
+  // Timer states
+  const [timerActive, setTimerActive] = useState<boolean>(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [displayTime, setDisplayTime] = useState<string>("00:00");
 
-  // const [diffContent, setDiffContent] =
-  //   useState<React.ReactNode>(machineTranslation);
+  // Function to start the annotation timer
+  const startAnnotationTimer = () => {
+    setTimerActive(true);
+    setStartTime(Date.now());
+    setElapsedTime(0);
+    setDisplayTime("00:00");
+    toast.info("Annotation timer started");
+  };
+
+  // Update timer display while active
+  useEffect(() => {
+    let timerInterval: NodeJS.Timeout | null = null;
+
+    if (timerActive && startTime) {
+      timerInterval = setInterval(() => {
+        const currentElapsed = Math.floor((Date.now() - startTime) / 1000);
+        setElapsedTime(currentElapsed);
+
+        // Format time as mm:ss
+        const minutes = Math.floor(currentElapsed / 60);
+        const seconds = currentElapsed % 60;
+        setDisplayTime(
+          `${minutes.toString().padStart(2, "0")}:${seconds
+            .toString()
+            .padStart(2, "0")}`
+        );
+      }, 1000);
+    }
+
+    return () => {
+      if (timerInterval) clearInterval(timerInterval);
+    };
+  }, [timerActive, startTime]);
 
   const handleDiffTextUpdate = (parsedDiff: React.ReactNode) => {
     setDiffContent(parsedDiff);
@@ -104,21 +143,27 @@ const App: React.FC = () => {
         // Scroll the row into view
         rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
+
+      // Show success toast
+      toast.success("Navigated to the next unannotated sentence");
+    } else {
+      // Show info toast if no more unannotated sentences
+      toast.info("No more unannotated sentences found");
     }
   };
 
   const handleSubmitAnnotation = () => {
+    // Stop timer if active and calculate final duration
+    let annotationDuration = 0;
+    if (timerActive && startTime) {
+      annotationDuration = Math.floor((Date.now() - startTime) / 1000);
+      setTimerActive(false);
+      setStartTime(null);
+      setElapsedTime(0);
+      setDisplayTime("00:00");
+    }
+
     // Create the annotation object
-
-    // // Scroll to the database viewer
-    // const dbViewerElement = document.querySelector(".db-sentence-view");
-    // if (dbViewerElement) {
-    //   dbViewerElement.scrollIntoView({
-    //     behavior: "smooth",
-    //     block: "start",
-    //   });
-    // }
-
     const selectElement = document.querySelector(".span-score-section select");
     if (selectElement) {
       (selectElement as HTMLElement).style.backgroundColor = "#222222";
@@ -146,6 +191,7 @@ const App: React.FC = () => {
       ),
       overall_translation_score: overallScore,
       corrected_sentence: modifiedText,
+      annotation_time_seconds: annotationDuration, // Add time data to submission
     };
 
     console.log(packageHighlightedErrors);
@@ -161,6 +207,8 @@ const App: React.FC = () => {
     console.log(requestBody);
 
     // Submit the annotation object
+    // Show loading toast
+    const toastId = toast.loading("Submitting annotation...");
 
     fetch(
       "https://translation-correct-annotation-task-dutd.vercel.app/api/submit_annotation",
@@ -172,73 +220,94 @@ const App: React.FC = () => {
         body: JSON.stringify(requestBody),
       }
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         console.log("Success:", data);
+        // Update the loading toast to a success toast
+        toast.update(toastId, {
+          render: "Annotation submitted successfully!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+          closeButton: true,
+        });
+
+        // After successful submission, find the next unannotated sentence
+        const currentIndex = sentenceData.findIndex(
+          (item) => item._id === sentenceID
+        );
+        const nextSentence = sentenceData
+          .slice(currentIndex + 1)
+          .find(
+            (item) =>
+              !item.annotations || !item.annotations[`${username}_annotations`]
+          );
+
+        if (nextSentence) {
+          // Automatically select the next unannotated sentence
+          setOrigText(nextSentence.src);
+          setTranslatedText(nextSentence.mt);
+          setDiffContent(nextSentence.mt);
+          setSentenceID(nextSentence._id);
+          setModifiedText(nextSentence.mt);
+        }
+
+        // Remove active class from all rows first
+        document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
+          row.classList.remove("active-db-row");
+        });
+
+        // Find the row element that was clicked on
+        const rowElement = document.querySelector(`.db-row-${nextSentence.id}`);
+        // Apply highlight to the clicked row
+        if (rowElement) {
+          rowElement.classList.add("active-db-row");
+        }
+
+        // Reset States
+        setOverallScore(50);
+        setErrorSpans([]);
+        setSpanSeverity("");
+
+        // Update sentenceData row for live status update
+        setSentenceData((prevData) => {
+          return prevData.map((row) =>
+            row._id === sentenceID
+              ? {
+                  ...row,
+                  annotations: { [annotationKey]: packageHighlightedErrors },
+                }
+              : row
+          );
+        });
       })
       .catch((error) => {
         console.error("Error:", error);
+        // Update the loading toast to an error toast
+        toast.update(toastId, {
+          render: `Error submitting annotation: ${error.message}`,
+          type: "error",
+          isLoading: false,
+          autoClose: 5000,
+          closeButton: true,
+        });
       });
-
-    // After successful submission, find the next unannotated sentence
-    const currentIndex = sentenceData.findIndex(
-      (item) => item._id === sentenceID
-    );
-    const nextSentence = sentenceData
-      .slice(currentIndex + 1)
-      .find(
-        (item) =>
-          !item.annotations || !item.annotations[`${username}_annotations`]
-      );
-
-    if (nextSentence) {
-      // Automatically select the next unannotated sentence
-      setOrigText(nextSentence.src);
-      setTranslatedText(nextSentence.mt);
-      setDiffContent(nextSentence.mt);
-      setSentenceID(nextSentence._id);
-      setModifiedText(nextSentence.mt);
-    }
-
-    // Remove active class from all rows first
-    document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
-      row.classList.remove("active-db-row");
-    });
-
-    // Find the row element that was clicked on
-    const rowElement = document.querySelector(`.db-row-${nextSentence.id}`);
-    // Apply highlight to the clicked row
-    if (rowElement) {
-      rowElement.classList.add("active-db-row");
-      // Scroll the row into view
-      // rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-
-    // Reset States
-    setOverallScore(50);
-    setErrorSpans([]);
-    // setSpanSeverity("Minor");
-    setSpanSeverity("");
-    // setTranslatedText(machineTranslation);
-
-    // Update sentenceData row for live staus update
-    console.log("AH", packageHighlightedErrors);
-    setSentenceData((prevData) => {
-      return prevData.map((row) =>
-        row._id === sentenceID
-          ? {
-              ...row,
-              annotations: { [annotationKey]: packageHighlightedErrors },
-            }
-          : row
-      );
-    });
   };
   // **JSX**
   return (
     <div className="body">
       <div className="logo-nav-container">
         <img className="logo_1" src={logo} alt="" />
+        {timerActive && (
+          <div className="annotation-timer-display">
+            <span>Time: {displayTime}</span>
+          </div>
+        )}
       </div>
       {/* DB Viewer */}
       <div className="divider"></div>
@@ -249,6 +318,7 @@ const App: React.FC = () => {
             <DatabaseSentenceView
               setOrigText={setOrigText}
               setTranslatedText={setTranslatedText}
+              setReferenceText={setReferenceText}
               setDiffContent={setDiffContent}
               setModifedText={setModifiedText}
               setAddedErrorSpans={setAddedErrorSpans}
@@ -274,8 +344,10 @@ const App: React.FC = () => {
             <div className="divider"></div>
 
             <ErrorSuggestion
-              referenceTranslation={referenceTranslation}
+              sourceText={sourceText}
               machineTranslation={machineTranslation}
+              referenceText={referenceText}
+              // setReferenceText={setReferenceText}
               highlightedError={highlightedError}
               originalHighlightedError={originalHighlightedError}
               setTranslatedText={setTranslatedText}
@@ -287,6 +359,8 @@ const App: React.FC = () => {
               setAddedErrorSpans={setAddedErrorSpans}
               diffContent={diffContent}
               setDiffContent={setDiffContent}
+              startAnnotationTimer={startAnnotationTimer}
+              timerActive={timerActive}
             />
             <div className="divider"></div>
             {/* <div className="source-mt-sentence-display">
@@ -364,6 +438,18 @@ const App: React.FC = () => {
           </div>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 };

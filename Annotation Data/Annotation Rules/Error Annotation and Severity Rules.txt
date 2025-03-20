@@ -1,0 +1,14 @@
+Error Category Definitions
+Addition - Error occuring in the target content that includes content not present in the source.
+Omission - Error where content present in the source is missing in the target.
+Mistranslation - Error occuring when the target content that does not accurately represent the source content.
+Untranslated - Error occuring when a text segment that was intended for translation is omitted in the target content.
+Grammar - Error that occurs when a text string (sentence, phrase, other) in the translation violates the grammatical rules of the target language.
+Spelling - Error occurring when a word is misspelled.
+Typography - Error occurring in the visual presentation of text, such as incorrect or missing punctuation, inconsistent capitalization, spacing errors, or other layout/formatting issues that do not match the conventions of the target language.
+Unintelligible - Text garbled or incomprehensible.
+
+
+Error Severity Definitions
+Major: When the error introduced caused a significant change in the meaning of the translated sentence.
+Minor: When the error introduced does not really change the meaning of the sentence that is resulting. It just has a very slight issue when it comes to reading the translated sentence.

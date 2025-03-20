@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Toast from "../common/toast";
+import { toast } from "react-toastify";
 
 type LoginFormProps = {
   setDataset: React.Dispatch<any>;
@@ -29,11 +29,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [successfullLogin, setSuccessfullLogin] = useState<boolean>(false);
 
-  // Add toast notification for login/registration
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastType, setToastType] = useState<"success" | "error">("success");
-
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
     const storedPassword = localStorage.getItem("password");
@@ -58,11 +53,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     inputPassword?: string
   ) => {
     setError(null); // Reset error state before submitting
-
-    // Reset toast state before showing new toast
-    setShowToast(false);
-    // Small delay to ensure state update before showing new toast
-    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const user = inputUsername || username;
     const pass = inputPassword || password;
@@ -93,9 +83,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           localStorage.setItem("password", pass);
 
           // Set login state
-          setToastMessage("Login successful!");
-          setToastType("success");
-          setShowToast(true);
+          toast.success("Login successful!");
           setSuccessfullLogin(true);
           setDBUsername(user); // Important: use the user parameter, not username state
 
@@ -111,17 +99,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           // console.log("Dataset:", data.dataset);
         } else {
           setError(data.error || "Something went wrong. Please try again.");
-          setToastMessage(data.error || "Login failed");
-          setToastType("error");
-          setShowToast(true);
+          toast.error(data.error || "Login failed");
           setSuccessfullLogin(false);
         }
       } catch (err) {
         console.error("Error during login", err);
         setError("An unexpected error occurred. Please try again.");
-        setToastMessage("An unexpected error occurred. Please try again.");
-        setToastType("error");
-        setShowToast(true);
+        toast.error("An unexpected error occurred. Please try again.");
         setSuccessfullLogin(false);
       }
     } else {
@@ -139,21 +123,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         const data = await response.json();
         if (response.ok) {
-          alert("Registration successful! You can now log in.");
+          // alert("Registration successful! You can now log in.");
+          toast.success("Registration successful! You can now log in.");
           setIsNewUser(false); // Switch back to login mode
         } else {
           setError(data.error || "Something went wrong. Please try again.");
-          setToastMessage(data.error || "Registration failed");
-          setToastType("error");
-          setShowToast(true);
+          toast.error(data.error || "Registration failed");
           setSuccessfullLogin(false);
         }
       } catch (err) {
         console.error("Error during login/registration:", err);
         setError("An unexpected error occurred. Please try again.");
-        setToastMessage("An unexpected error occurred. Please try again.");
-        setToastType("error");
-        setShowToast(true);
+        toast.error("An unexpected error occurred. Please try again.");
         setSuccessfullLogin(false);
       }
     }
@@ -161,13 +142,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <div className="login-form">
-      {showToast && (
-        <Toast
-          message={toastMessage}
-          type={toastType}
-          onClose={() => setShowToast(false)}
-        />
-      )}
       <h1 className="login-form-title">
         {isNewUser
           ? "Please Register to Annotate"

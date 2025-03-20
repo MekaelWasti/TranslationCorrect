@@ -20,6 +20,8 @@ type SpanEvalContextType = {
   setEntryIdx: (newEntryIdx: number) => void;
   origText: string;
   setOrigText: Dispatch<SetStateAction<string>>;
+  referenceText: string;
+  setReferenceText: Dispatch<SetStateAction<string>>;
   translatedText: string;
   setTranslatedText: Dispatch<SetStateAction<string>>;
   originalSpans: HighlightedError[] | undefined;
@@ -36,6 +38,7 @@ type SpanEvalContextType = {
     error_type: string,
     severity: string
   ) => void;
+  deleteErrorSpan: (idx: number) => void;
   selectedSpanIdx: number | undefined;
   setSelectedSpanIdx: Dispatch<SetStateAction<number | undefined>>;
   diffContent: React.ReactNode;
@@ -71,6 +74,9 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     // input[curEntryIdx].translated_text
     "Please select a sentence to annotate from the database." // Want empty string for translated text
   );
+  const [referenceText, setReferenceText] = useState<string>(
+    "Please select a sentence to annotate from the database." // Want empty string for reference text
+  );
   // const originalSpans = input[curEntryIdx].errorSpans;
   const originalSpans = []; // Want empty array for spans
   const [errorSpans, setErrorSpans] = useState<HighlightedError[]>(
@@ -83,6 +89,27 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
   const [error_type, setError_type] = useState<string>("");
 
   const [spanSeverity, setSpanSeverity] = useState<string>("");
+
+  const updateSpanBoundaries = (
+    spanIndex: number,
+    newStart: number,
+    newEnd: number
+  ) => {
+    setErrorSpans((prevSpans) => {
+      const updatedSpans = [...prevSpans];
+      const span = { ...updatedSpans[spanIndex] };
+
+      // Update the boundaries
+      span.start_index_orig = newStart;
+      span.end_index_orig = newEnd;
+
+      // You may also need to update the original_text and translated_text based on the new boundaries
+      // This depends on how your data is structured
+
+      updatedSpans[spanIndex] = span;
+      return updatedSpans;
+    });
+  };
 
   const setEntryIdx = (newEntryIdx: number) => {
     if (newEntryIdx >= input.length) {
@@ -136,6 +163,21 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     setErrorSpans(newErrorSpans);
   };
 
+  const deleteErrorSpan = (idx: number) => {
+    const newErrorSpans = [
+      ...errorSpans.slice(0, idx),
+      ...errorSpans.slice(idx + 1, errorSpans.length),
+    ];
+    setErrorSpans(newErrorSpans);
+    // Clear selected span if the deleted span was selected
+    if (selectedSpanIdx === idx) {
+      setSelectedSpanIdx(undefined);
+    } else if (selectedSpanIdx !== undefined && selectedSpanIdx > idx) {
+      // Adjust selected span index if a span before it was deleted
+      setSelectedSpanIdx(selectedSpanIdx - 1);
+    }
+  };
+
   const [selectedSpanIdx, setSelectedSpanIdx] = useState<number>();
   const [spanScores, setSpanScores] = useState<{
     // [key: number]: number;
@@ -161,6 +203,7 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     setSpanSeverity,
     updateSpanSeverity,
     addNewErrorSpan,
+    deleteErrorSpan,
     diffContent,
     setDiffContent,
     selectedSpanIdx,
@@ -168,6 +211,8 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     spanScores,
     setSpanScores,
     error_type,
+    referenceText,
+    setReferenceText,
   };
 
   return (
