@@ -264,12 +264,35 @@ const App: React.FC = () => {
           );
 
         if (nextSentence) {
+          console.log(nextSentence);
           // Automatically select the next unannotated sentence
           setOrigText(nextSentence.src);
           setTranslatedText(nextSentence.mt);
           setDiffContent(nextSentence.mt);
           setSentenceID(nextSentence._id);
           setModifiedText(nextSentence.mt);
+          if (
+            nextSentence.annotations &&
+            "error_spans" in nextSentence.annotations
+          ) {
+            const errorSpans = (nextSentence.annotations as any).error_spans;
+
+            // Transform the format to match what the component expects
+            const formattedErrorSpans = errorSpans.map((span) => ({
+              original_text: span.original_text,
+              error_type: span.error_type,
+              error_severity: span.error_severity,
+              start_index_orig: span.start_index_orig,
+              end_index_orig: span.end_index_orig,
+              start_index_translation: span.start_index_translation,
+              end_index_translation: span.end_index_translation,
+              correct_text: span.correct_text,
+            }));
+
+            setAddedErrorSpans(formattedErrorSpans);
+            setErrorSpans(formattedErrorSpans);
+            setOriginalSpans(formattedErrorSpans);
+          }
         }
 
         // Remove active class from all rows first

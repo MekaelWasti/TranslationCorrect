@@ -338,7 +338,7 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
     <div className="error-suggestion-container">
       <div className="error-suggestion-header">
         <h2>Error Suggestion</h2>
-        <div className="error-suggestion-model-container">
+        {/* <div className="error-suggestion-model-container">
           <h4>Error Detection Model</h4>
           <select
             name=""
@@ -349,7 +349,7 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
             <option value="XComet">XComet</option>
             <option value="DeekSeek R1">DeekSeek R1</option>
           </select>
-        </div>
+        </div> */}
       </div>
       <div className="error-suggestion-display">
         <h3>Source</h3>
@@ -413,15 +413,16 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
               "Get Error Suggestion"
             )}
           </button> */}
-          <button
+          {/* <button
             className="error-suggestion-button"
             onClick={handleApplyErrorSuggestions}
             onMouseEnter={handleMouseEnterApplySuggestions}
             onMouseLeave={handleMouseLeaveApplySuggestions}
           >
             Apply Suggestions
-          </button>
+          </button> */}
         </div>
+        <div className="divider"></div>
       </div>
       <PostEditContainer
         machineTranslation={machineTranslation}

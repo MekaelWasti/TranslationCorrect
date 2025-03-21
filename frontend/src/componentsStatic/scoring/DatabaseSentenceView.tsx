@@ -92,10 +92,10 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setDiffContent(item.mt);
     setSentenceID(item._id);
     setModifedText(item.mt);
-    // setAddedErrorSpans(item.annotations.error_spans);
 
     if (item.annotations.error_spans) {
       setHighlightedError(item.annotations.error_spans);
+      setAddedErrorSpans(item.annotations.error_spans);
       setOriginalHighlightedError(item.annotations.error_spans);
     }
 

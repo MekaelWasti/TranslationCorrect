@@ -150,6 +150,15 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   // Start the timer when user first interacts with the editable area
   const handleFirstInteraction = () => {
+    // Remove automatic timer start on first interaction
+    // if (startAnnotationTimer && !timerActive) {
+    //   startAnnotationTimer();
+    // }
+  };
+
+  // Handle clicks on the editable area to start the timer
+  const handleAreaClick = () => {
+    // Start timer on first click if it's not already running
     if (startAnnotationTimer && !timerActive) {
       startAnnotationTimer();
     }
@@ -159,10 +168,10 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     // Don't process input if we're in the middle of an IME composition
     if (isComposing) return;
 
-    // Start timer on first edit if it's not already running
-    if (startAnnotationTimer && !timerActive) {
-      startAnnotationTimer();
-    }
+    // We've removed the automatic timer start on first edit since we now start on click
+    // if (startAnnotationTimer && !timerActive) {
+    //   startAnnotationTimer();
+    // }
 
     console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
@@ -519,6 +528,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           suppressContentEditableWarning={true}
           onMouseUp={handleReactMouseUp}
           onFocus={handleFirstInteraction}
+          onClick={handleAreaClick}
         >
           <HighlightedText
             text={modifiedText}

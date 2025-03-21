@@ -1717,6 +1717,10 @@ select:hover {
   width: 100%;
 }
 
+.error-suggestion-display > div {
+  font-size: 1.4rem !important;
+}
+
 .error-suggestion-display > div > span {
   line-height: 3.7vh;
 }
