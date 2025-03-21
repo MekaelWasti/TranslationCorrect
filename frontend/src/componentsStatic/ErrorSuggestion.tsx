@@ -378,7 +378,7 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
             </div>
             <div className="reference-text-container">
               <h3>Reference</h3>
-              <p>{referenceText}</p>
+              <div>{referenceText}</div>
             </div>
           </div>
         </div>
