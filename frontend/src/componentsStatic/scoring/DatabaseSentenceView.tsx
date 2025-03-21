@@ -97,6 +97,10 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       setHighlightedError(item.annotations.error_spans);
       setAddedErrorSpans(item.annotations.error_spans);
       setOriginalHighlightedError(item.annotations.error_spans);
+    } else {
+      setHighlightedError([]);
+      setAddedErrorSpans([]);
+      setOriginalHighlightedError([]);
     }
 
     // setOriginalHighlightedError([

@@ -352,25 +352,37 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
         </div> */}
       </div>
       <div className="error-suggestion-display">
-        <h3>Source</h3>
-        <HighlightedText
-          text={sourceText}
-          // text="He had 2 goals and 2 assists in Washington's 5-3 win over the Atlanta Thrashers."
-          // highlights={sourceErrorSpans}
-          highlights={originalHighlightedError}
-          highlightKey="end_index_orig"
-          disableEdit={true}
-        />
-        <h3>Machine Translation</h3>
-        <HighlightedText
-          text={machineTranslation}
-          // text="佢喺華盛頓對亞特蘭大戰士嘅5-3勝利中 打咗2個目標同2個助攻。"
-          highlights={originalHighlightedError}
-          // highlights={mtErrorSpans}
-          // highlightKey="end_index_orig"
-          highlightKey="end_index_translation"
-          disableEdit={true}
-        />
+        <div className="error-suggestion-display-container">
+          <h3>Source</h3>
+          <HighlightedText
+            text={sourceText}
+            // text="He had 2 goals and 2 assists in Washington's 5-3 win over the Atlanta Thrashers."
+            // highlights={sourceErrorSpans}
+            highlights={originalHighlightedError}
+            highlightKey="end_index_orig"
+            disableEdit={true}
+          />
+          <div className="divider"></div>
+          <div className="error-suggestion-display-mt-reference-container">
+            <div className="machine-translation-container">
+              <h3>Machine Translation</h3>
+              <HighlightedText
+                text={machineTranslation}
+                // text="佢喺華盛頓對亞特蘭大戰士嘅5-3勝利中 打咗2個目標同2個助攻。"
+                highlights={originalHighlightedError}
+                // highlights={mtErrorSpans}
+                // highlightKey="end_index_orig"
+                highlightKey="end_index_translation"
+                disableEdit={true}
+              />
+            </div>
+            <div className="reference-text-container">
+              <h3>Reference</h3>
+              <p>{referenceText}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="error-suggestion-buttons-container">
           {/* <button
             className="error-suggestion-button"
