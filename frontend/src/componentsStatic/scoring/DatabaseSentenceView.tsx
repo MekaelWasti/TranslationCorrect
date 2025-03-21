@@ -3,11 +3,13 @@ import "../../index.css";
 import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
-
+import { HighlightedError } from "../../types";
 // Type Definitions
 type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
+  japanese_dataset: any[];
+  mandarin_v2_dataset: any[];
 };
 
 type DatabaseSentenceViewProps = {
@@ -27,6 +29,9 @@ type DatabaseSentenceViewProps = {
   setSentenceData: React.Dispatch<any>;
   setDataset: React.Dispatch<React.SetStateAction<DatasetType | null>>;
   dataset: DatasetType | null;
+  setOriginalHighlightedError: React.Dispatch<
+    React.SetStateAction<HighlightedError[]>
+  >;
 };
 
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
@@ -46,6 +51,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setSentenceData,
   setDataset,
   dataset,
+  setOriginalHighlightedError,
 }) => {
   const [activeLanguage, setActiveLanguage] = useState<string | null>(null);
   const [row_active, setRow_active] = useState<boolean>(false);
@@ -86,8 +92,60 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setDiffContent(item.mt);
     setSentenceID(item._id);
     setModifedText(item.mt);
-    setAddedErrorSpans([]);
-    setHighlightedError([]);
+    // setAddedErrorSpans(item.annotations.error_spans);
+
+    if (item.annotations.error_spans) {
+      setHighlightedError(item.annotations.error_spans);
+      setOriginalHighlightedError(item.annotations.error_spans);
+    }
+
+    // setOriginalHighlightedError([
+    //   {
+    //     original_text: "The 935",
+    //     error_type: "Omission",
+    //     error_severity: "Major",
+    //     start_index_orig: 12,
+    //     end_index_orig: 19,
+    //     start_index_translation: 6,
+    //     end_index_translation: 9,
+    //     correct_text:
+    //       "The source phrase 'her side' refers to a group on her side, but the machine translation renders it as '彼女の党', which means 'her party' (a political party). This is a mistranslation of the intended meaning.",
+    //   },
+    //   {
+    //     original_text: "The 935",
+    //     error_type: "Mistranslation",
+    //     error_severity: "Major",
+    //     start_index_orig: 21,
+    //     end_index_orig: 34,
+    //     start_index_translation: 21,
+    //     end_index_translation: 24,
+    //     correct_text:
+    //       "The source expression 'won the debate' is translated as '議論を勝ち取った'. Although similar in meaning, the more appropriate and idiomatic expression in the context is '議論に勝利した' as seen in the reference; hence, '勝ち取った' is a mistranslation that does not convey the intended nuance.",
+    //   },
+    // ]);
+
+    // setHighlightedError([
+    //   {
+    //     error_type: "Mistranslation",
+    //     error_severity: "Major",
+    //     start_index_orig: 12,
+    //     end_index_orig: 19,
+    //     start_index_translation: 6,
+    //     end_index_translation: 9,
+    //     correct_text:
+    //       "The source phrase 'her side' refers to a group on her side, but the machine translation renders it as '彼女の党', which means 'her party' (a political party). This is a mistranslation of the intended meaning.",
+    //   },
+    //   {
+    //     error_type: "Mistranslation",
+    //     error_severity: "Major",
+    //     start_index_orig: 21,
+    //     end_index_orig: 34,
+    //     start_index_translation: 21,
+    //     end_index_translation: 24,
+    //     correct_text:
+    //       "The source expression 'won the debate' is translated as '議論を勝ち取った'. Although similar in meaning, the more appropriate and idiomatic expression in the context is '議論に勝利した' as seen in the reference; hence, '勝ち取った' is a mistranslation that does not convey the intended nuance.",
+    //   },
+    // ]);
   };
 
   const handleDatabaseFetch = async (
@@ -98,6 +156,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     console.log(language);
     setActiveLanguage(language);
 
+    console.log(dataset);
+
     if (!dataset) {
       console.error("Dataset is undefined");
     } else if (language === "Mandarin") {
@@ -106,6 +166,12 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     } else if (language === "Cantonese") {
       setSentenceData(dataset.cantonese_dataset ?? []);
       setCurrentDatabase("annotation-tool-cantonese");
+    } else if (language === "Japanese") {
+      setSentenceData(dataset.japanese_dataset ?? []);
+      setCurrentDatabase("annotation-tool-japanese");
+    } else if (language === "Mandarin-v2") {
+      setSentenceData(dataset.mandarin_v2_dataset ?? []);
+      setCurrentDatabase("annotation-tool-mandarin-v2");
     }
   };
 
@@ -143,6 +209,22 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
           onClick={handleDatabaseFetch}
         >
           Hokkien
+        </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Japanese" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Japanese
+        </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Mandarin-v2" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Mandarin-v2
         </button>
       </div>
 

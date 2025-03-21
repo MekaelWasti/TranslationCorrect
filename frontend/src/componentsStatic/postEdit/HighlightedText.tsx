@@ -521,17 +521,38 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
             Error Type: {hoveredHighlight.error_type}
           </h3>
           <div className="error-tooltip-text-display">
+            <p
+              style={{
+                color:
+                  hoveredHighlight.error_severity === "Minor"
+                    ? "#ffd000"
+                    : hoveredHighlight.error_severity === "Major"
+                    ? "orange"
+                    : "red",
+              }}
+            >
+              <strong style={{ color: "white" }}>Error Severity:</strong>{" "}
+              {hoveredHighlight.error_severity}
+            </p>
+            {hoveredHighlight.error_confidence && (
+              <p>
+                <strong>Error Confidence:</strong>{" "}
+                {hoveredHighlight.error_confidence}
+              </p>
+            )}
             <p>
               <strong>Original Text:</strong> {hoveredHighlight.original_text}
             </p>
+            {hoveredHighlight.translated_text && (
+              <p>
+                <strong>Translated Text:</strong>{" "}
+                {hoveredHighlight.translated_text}
+              </p>
+            )}
             <p>
-              <strong>Translated Text:</strong>{" "}
-              {hoveredHighlight.translated_text}
+              <strong>Correct Text:</strong> {hoveredHighlight.correct_text}
             </p>
           </div>
-          <p>
-            <strong>Correct Text:</strong> {hoveredHighlight.correct_text}
-          </p>
         </div>
       )}
       {deleteButtonVisible && hoveredHighlightIdx !== null && !disableEdit && (

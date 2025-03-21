@@ -356,7 +356,8 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
         <HighlightedText
           text={sourceText}
           // text="He had 2 goals and 2 assists in Washington's 5-3 win over the Atlanta Thrashers."
-          highlights={sourceErrorSpans}
+          // highlights={sourceErrorSpans}
+          highlights={originalHighlightedError}
           highlightKey="end_index_orig"
           disableEdit={true}
         />
@@ -364,13 +365,14 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
         <HighlightedText
           text={machineTranslation}
           // text="佢喺華盛頓對亞特蘭大戰士嘅5-3勝利中 打咗2個目標同2個助攻。"
-          highlights={mtErrorSpans}
+          highlights={originalHighlightedError}
+          // highlights={mtErrorSpans}
           // highlightKey="end_index_orig"
           highlightKey="end_index_translation"
           disableEdit={true}
         />
         <div className="error-suggestion-buttons-container">
-          <button
+          {/* <button
             className="error-suggestion-button"
             onClick={() => getErrorSuggestion(sourceText, machineTranslation)}
             disabled={isLoading}
@@ -410,7 +412,7 @@ export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
             ) : (
               "Get Error Suggestion"
             )}
-          </button>
+          </button> */}
           <button
             className="error-suggestion-button"
             onClick={handleApplyErrorSuggestions}

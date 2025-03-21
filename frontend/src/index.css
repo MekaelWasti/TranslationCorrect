@@ -754,6 +754,23 @@ li {
   text-decoration: underline;
 }
 
+/* REVISED FOR OMISSION SPANS */
+/* .post-edit-additions {
+  color: white;
+  background-color: #00a0f0;
+  text-decoration: none;
+  margin: 0 0.3vw 0 0.3vw;
+  padding: 0.4vh 0.1vw 0.4vh 0.1vw;
+  border-radius: 5px;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.25s ease-in-out;
+} */
+
+/* .post-edit-additions-selected {
+  outline: rgb(255, 255, 255) solid 2px;
+} */
+
 .post-edit-deletions {
   color: rgb(255, 34, 0);
   text-decoration: line-through;

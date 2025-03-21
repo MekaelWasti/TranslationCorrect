@@ -25,6 +25,7 @@ type SpanEvalContextType = {
   translatedText: string;
   setTranslatedText: Dispatch<SetStateAction<string>>;
   originalSpans: HighlightedError[] | undefined;
+  setOriginalSpans: Dispatch<SetStateAction<HighlightedError[]>>;
   errorSpans: HighlightedError[] | undefined;
   setErrorSpans: Dispatch<SetStateAction<HighlightedError[]>>;
   updateSpanErrorType: (idx: number, newType: string) => void;
@@ -78,7 +79,7 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     "Please select a sentence to annotate from the database." // Want empty string for reference text
   );
   // const originalSpans = input[curEntryIdx].errorSpans;
-  const originalSpans = []; // Want empty array for spans
+  const [originalSpans, setOriginalSpans] = useState<HighlightedError[]>([]);
   const [errorSpans, setErrorSpans] = useState<HighlightedError[]>(
     // input[curEntryIdx].errorSpans
     []
@@ -196,6 +197,7 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     translatedText,
     setTranslatedText,
     originalSpans,
+    setOriginalSpans,
     errorSpans,
     setErrorSpans,
     updateSpanErrorType,

@@ -2,6 +2,7 @@ export interface HighlightedError {
   original_text: string;
   translated_text?: string;
   correct_text?: string;
+  error_confidence?: number;
   start_index_orig?: number;
   end_index_orig?: number;
   start_index_translation: number;
@@ -39,5 +40,6 @@ export const colorMappings: { [key: string]: string } = {
   "Grammar": "#D2691E",
   "Spelling": "#9B59B6",
   "Typography": "#1ABC9C",
-  "Unintelligible": "#F39C12"
+  "Unintelligible": "#F39C12",
+  "N/A": "#767676"
 };

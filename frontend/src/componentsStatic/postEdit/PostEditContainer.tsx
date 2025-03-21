@@ -23,8 +23,6 @@ type PostEditContainerProps = {
   setAddedErrorSpans: (newErrorSpans: [] | any) => void;
   diffContent: React.ReactNode;
   setDiffContent: (newDiffContent: React.ReactNode) => void;
-  startAnnotationTimer?: () => void;
-  timerActive?: boolean;
 };
 
 // Debounce function
@@ -59,8 +57,6 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   setAddedErrorSpans,
   diffContent,
   setDiffContent,
-  startAnnotationTimer,
-  timerActive,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
   const { translatedText, addNewErrorSpan } = useSpanEvalContext();
@@ -69,13 +65,11 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   const [showInsertButton, setShowInsertButton] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0 });
   const [highlightInserted, setHighlightInserted] = useState(false);
-  const [withinSpanCheck, setWithinSpanCheck] = useState(false);
 
   const [isComposing, setIsComposing] = useState(false);
 
   // Add state for clear button
   const [clearButtonClicked, setClearButtonClicked] = useState(false);
-  const [manualSpans, setManualSpans] = useState<HighlightedError[]>([]);
 
   // Helper functions for caret management:
   function getCaretCharacterOffsetWithin(element: Node): number {
@@ -139,12 +133,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   }
 
   const handleCompositionStart = () => {
-    // console.log("Composition started");
+    console.log("Composition started");
     setIsComposing(true);
   };
 
   const handleCompositionEnd = (event: CompositionEvent) => {
-    // console.log("Composition ended:", event.data);
+    console.log("Composition ended:", event.data);
     setIsComposing(false);
     // Process final input once composition is complete
     handleInput();
@@ -154,7 +148,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     // Don't process input if we're in the middle of an IME composition
     if (isComposing) return;
 
-    // console.log("Current highlighted errors:", highlightedError);
+    console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
     // Save the caret offset before updating state.
     caretOffsetRef.current = getCaretCharacterOffsetWithin(
@@ -162,26 +156,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     );
     const newText = editableDivRef.current.innerText || "";
 
-    console.log("caretOffsetRef.current", caretOffsetRef.current);
-
-    console.log("---------------------------------");
-    console.log("Current highlighted errors:", highlightedError);
-
-    for (const span of highlightedError) {
-      if (
-        caretOffsetRef.current >= span.start_index_translation &&
-        caretOffsetRef.current <= span.end_index_translation
-      ) {
-        console.log("caretOffsetRef.current is within span", span);
-        setWithinSpanCheck(true);
-      } else {
-        console.log("caretOffsetRef.current is not within span", span);
-        setWithinSpanCheck(false);
-      }
-    }
-
     // Log the new text for debugging
-    // console.log("New text after input:", newText);
+    console.log("New text after input:", newText);
 
     // ---------- Incremental Change Detection ----------
     // Find the first index where the old and new texts differ.
@@ -245,15 +221,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setAddedErrorSpans(updatedSpans);
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
-
-    // Generate diff will now automatically add spans for new text insertions
     generateDiff(machineTranslation, newText);
-
-    console.log("updatedSpans", updatedSpans);
-
-    setAddedErrorSpans(updatedSpans);
-    setHighlightedError(updatedSpans);
-    setModifiedText(newText);
   };
 
   const applyHighlight = () => {
@@ -346,7 +314,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   // React event handler for use with React components
   const handleReactMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    // console.log("Mouse up (React)");
+    console.log("Mouse up (React)");
     // Handle React-specific logic here
   };
 
@@ -359,7 +327,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   // Native event handler for use with addEventListener
   const handleNativeMouseUp = (event: MouseEvent) => {
-    // console.log("Mouse up (native)");
+    console.log("Mouse up (native)");
 
     const selection = window.getSelection();
     if (selection && selection.toString().trim().length > 0) {
@@ -458,61 +426,22 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     // Send raw modified text to parent component
     setModifiedText(modified);
 
-    // Track character positions and collect modification spans
-    let posInModified = 0;
-    let posInOriginal = 0;
-    const modificationSpans: HighlightedError[] = [];
-
-    // Convert diffs into React elements and track positions
+    // Convert diffs into React elements
     const diffElements = diffs.map(([type, text], index) => {
       if (type === DIFF_INSERT) {
-        // Track insertion spans
-        const startIndex = posInModified;
-        const endIndex = posInModified + text.length;
-
-        modificationSpans.push({
-          original_text: "",
-          translated_text: text,
-          start_index_translation: startIndex,
-          end_index_translation: endIndex,
-          error_type: "Omission",
-          error_severity: "Minor",
-        });
-
-        posInModified += text.length;
-
         return (
           <span className="post-edit-additions" key={`diff-${index}`}>
             {text}
           </span>
         );
       } else if (type === DIFF_DELETE) {
-        // Track deletion spans (these won't be in the modified text)
-        posInOriginal += text.length;
-
-        const startIndex = posInModified;
-        const endIndex = posInModified + text.length;
-
-        modificationSpans.push({
-          original_text: text,
-          translated_text: "",
-          start_index_translation: startIndex,
-          end_index_translation: endIndex,
-          error_type: "Addition",
-          error_severity: "Minor",
-        });
-
-        posInModified += text.length;
-
         return (
           <span className="post-edit-deletions" key={`diff-${index}`}>
             {text}
           </span>
         );
       } else {
-        // For equal text, update both positions
-        posInOriginal += text.length;
-        posInModified += text.length;
+        // For equal text, return as is
         return text;
       }
     });
@@ -522,19 +451,6 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     // Update state and pass the diffContent to parent component
     onDiffTextUpdate(diffContent);
-
-    // If there are new insertions, add them to highlighted errors
-    if (modificationSpans.length > 0) {
-      // Filter out only insertions that have actual content
-      const insertionSpans = modificationSpans.filter(
-        (span) => span.translated_text.trim().length > 0
-      );
-
-      if (insertionSpans.length > 0) {
-        // Add new spans to highlighted errors
-        setManualSpans([...manualSpans, ...insertionSpans]);
-      }
-    }
   };
 
   useEffect(() => {
@@ -544,29 +460,21 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     };
   }, []);
 
-  const handleStartAnnotation = () => {
-    if (startAnnotationTimer && !timerActive) {
-      startAnnotationTimer();
+  useEffect(() => {
+    if (!isComposing) {
+      handleInput();
     }
-  };
+  }, [isComposing]);
 
   //   Return JSX
   return (
     <div>
       <div className="post-edit-section">
         <div className="post-edit-section-header">
-          <h2>Post-Editing</h2>
+          <h3>Post-Editing</h3>
         </div>
         <div className="post-edit-section-header-buttons">
-          <button
-            className={`start-annotation-button ${
-              timerActive ? "timer-active" : ""
-            }`}
-            onClick={handleStartAnnotation}
-            disabled={timerActive}
-          >
-            {timerActive ? "Timing..." : "Start Annotation"}
-          </button>
+          <button className="start-annotation-button">Start Annotation</button>
           <button className={`insert-span-button`} onClick={applyHighlight}>
             Insert Span
           </button>
@@ -590,13 +498,11 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           onMouseUp={handleReactMouseUp}
         >
           <HighlightedText
-            // text={modifiedText}
-            text={diffContent}
+            text={modifiedText}
             // highlights={addedErrorSpans}
             highlights={highlightedError}
             highlightKey="end_index_translation"
             highlightInserted={highlightInserted}
-            setHighlightInserted={setHighlightInserted}
           />
         </div>
         <button

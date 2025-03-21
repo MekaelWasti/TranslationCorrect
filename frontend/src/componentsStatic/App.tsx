@@ -17,6 +17,8 @@ import logo from "../assets/logo.svg";
 type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
+  japanese_dataset: any[];
+  mandarin_v2_dataset: any[];
 };
 
 const App: React.FC = () => {
@@ -28,6 +30,7 @@ const App: React.FC = () => {
     referenceText,
     setReferenceText,
     originalSpans: originalHighlightedError,
+    setOriginalSpans,
     errorSpans: highlightedError,
     setErrorSpans,
     curEntryIdx,
@@ -332,6 +335,8 @@ const App: React.FC = () => {
               setSentenceData={setSentenceData}
               dataset={dataset}
               setDataset={setDataset}
+              // originalHighlightedError={originalHighlightedError}
+              setOriginalHighlightedError={setOriginalSpans}
             />
             <div className="go-to-last-annotated-button-container">
               <button
