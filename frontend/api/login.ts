@@ -35,7 +35,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const mandarin_dataset = await db.collection('annotation-tool-dataset').find({}).toArray();
                 const cantonese_dataset = await db.collection('annotation-tool-cantonese').find({}).toArray();
                 const japanese_dataset = await db.collection('annotation-tool-japanese').find({}).toArray();
-                return res.status(200).json({ message: "Login successful", mandarin_dataset, cantonese_dataset, japanese_dataset }); // Return the dataset if the user is authenticated successfully
+                const mandarin_v2_dataset = await db.collection('annotation-tool-mandarin_v2').find({}).toArray();
+                return res.status(200).json({ message: "Login successful", mandarin_dataset, cantonese_dataset, japanese_dataset, mandarin_v2_dataset }); // Return the dataset if the user is authenticated successfully
             }
             else {
                 return res.status(401).json({ error: "Incorrect password" });
