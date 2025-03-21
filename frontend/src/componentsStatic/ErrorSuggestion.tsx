@@ -18,8 +18,8 @@ type ErrorSuggestionProps = {
   setAddedErrorSpans: (spans: HighlightedError[]) => void;
   diffContent: React.ReactNode;
   setDiffContent: (content: React.ReactNode) => void;
-  startAnnotationTimer?: () => void;
-  timerActive?: boolean;
+  startAnnotationTimer: () => void;
+  timerActive: boolean;
 };
 export const ErrorSuggestion: React.FC<ErrorSuggestionProps> = ({
   sourceText,

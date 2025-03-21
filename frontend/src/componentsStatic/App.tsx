@@ -164,6 +164,13 @@ const App: React.FC = () => {
       setStartTime(null);
       setElapsedTime(0);
       setDisplayTime("00:00");
+    } else if (elapsedTime > 0) {
+      // If timer is not active but we have elapsed time recorded
+      annotationDuration = elapsedTime;
+    } else {
+      // If no timer was started, capture the warning in logs and notify user
+      console.warn("No annotation time recorded - timer was not started");
+      toast.warning("No annotation time recorded. Timer was not started.");
     }
 
     // Create the annotation object
@@ -194,9 +201,14 @@ const App: React.FC = () => {
       ),
       overall_translation_score: overallScore,
       corrected_sentence: modifiedText,
-      annotation_time_seconds: annotationDuration, // Add time data to submission
+      annotation_time_seconds: annotationDuration, // Timer data will always be included
     };
 
+    console.log(
+      "Submitting annotation with time:",
+      annotationDuration,
+      "seconds"
+    );
     console.log(packageHighlightedErrors);
 
     const annotationKey = `${username}_annotations`;

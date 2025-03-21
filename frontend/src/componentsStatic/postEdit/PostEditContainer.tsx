@@ -23,6 +23,8 @@ type PostEditContainerProps = {
   setAddedErrorSpans: (newErrorSpans: [] | any) => void;
   diffContent: React.ReactNode;
   setDiffContent: (newDiffContent: React.ReactNode) => void;
+  startAnnotationTimer?: () => void;
+  timerActive?: boolean;
 };
 
 // Debounce function
@@ -57,6 +59,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   setAddedErrorSpans,
   diffContent,
   setDiffContent,
+  startAnnotationTimer,
+  timerActive,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
   const { translatedText, addNewErrorSpan } = useSpanEvalContext();
@@ -144,9 +148,21 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     handleInput();
   };
 
+  // Start the timer when user first interacts with the editable area
+  const handleFirstInteraction = () => {
+    if (startAnnotationTimer && !timerActive) {
+      startAnnotationTimer();
+    }
+  };
+
   const handleInput = () => {
     // Don't process input if we're in the middle of an IME composition
     if (isComposing) return;
+
+    // Start timer on first edit if it's not already running
+    if (startAnnotationTimer && !timerActive) {
+      startAnnotationTimer();
+    }
 
     console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
@@ -474,7 +490,13 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           <h3>Post-Editing</h3>
         </div>
         <div className="post-edit-section-header-buttons">
-          <button className="start-annotation-button">Start Annotation</button>
+          <button
+            className="start-annotation-button"
+            onClick={startAnnotationTimer}
+            disabled={timerActive}
+          >
+            {timerActive ? "Annotation Timer Running" : "Start Annotation"}
+          </button>
           <button className={`insert-span-button`} onClick={applyHighlight}>
             Insert Span
           </button>
@@ -496,6 +518,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           contentEditable={true}
           suppressContentEditableWarning={true}
           onMouseUp={handleReactMouseUp}
+          onFocus={handleFirstInteraction}
         >
           <HighlightedText
             text={modifiedText}
