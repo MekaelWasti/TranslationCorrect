@@ -19,6 +19,7 @@ type DatasetType = {
   cantonese_dataset: any[];
   japanese_dataset: any[];
   mandarin_v2_dataset: any[];
+  bengali_dataset: any[];
 };
 
 const App: React.FC = () => {
@@ -309,7 +310,7 @@ const App: React.FC = () => {
 
         // Reset States
         setOverallScore(50);
-        setErrorSpans([]);
+        // setErrorSpans([]);
         setSpanSeverity("");
 
         // Update sentenceData row for live status update
