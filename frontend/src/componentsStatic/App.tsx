@@ -272,6 +272,7 @@ const App: React.FC = () => {
           setDiffContent(nextSentence.mt);
           setSentenceID(nextSentence._id);
           setModifiedText(nextSentence.mt);
+          setReferenceText(nextSentence.ref);
           if (
             nextSentence.annotations &&
             "error_spans" in nextSentence.annotations
