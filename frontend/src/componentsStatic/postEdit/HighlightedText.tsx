@@ -563,6 +563,14 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
           style={deleteButtonStyle}
           onClick={(e) => handleDeleteSpan(e, hoveredHighlightIdx)}
           onMouseEnter={() => setDeleteButtonVisible(true)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onKeyPress={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
         >
           {/* Delete */}X
         </button>
@@ -573,6 +581,14 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
           className={`span-dropdown ${dropdownAnimation}`}
           onContextMenu={(event) => event.preventDefault()}
           contentEditable={false}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onKeyPress={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
           style={{
             position: "absolute",
             left: initialSpanPosition?.left || spanPosition?.left,

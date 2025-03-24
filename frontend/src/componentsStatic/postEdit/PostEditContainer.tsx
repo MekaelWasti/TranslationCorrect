@@ -168,10 +168,30 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     // Don't process input if we're in the middle of an IME composition
     if (isComposing) return;
 
+    // Check if any dropdown is currently open and abort if so
+    const openDropdown = document.querySelector(".span-dropdown");
+    if (openDropdown) {
+      console.log("Input prevented while dropdown is open");
+      return;
+    }
+
+    // Check if any delete button is visible and abort if so
+    const visibleDeleteButton = document.querySelector(
+      ".delete-span-button.visible"
+    );
+    if (visibleDeleteButton) {
+      console.log("Input prevented while delete button is visible");
+      return;
+    }
+
     // We've removed the automatic timer start on first edit since we now start on click
     // if (startAnnotationTimer && !timerActive) {
     //   startAnnotationTimer();
     // }
+
+    if (highlightInserted) {
+      setHighlightInserted(false);
+    }
 
     console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
@@ -246,7 +266,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setAddedErrorSpans(updatedSpans);
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
-    generateDiff(machineTranslation, newText);
+    // generateDiff(machineTranslation, newText);
   };
 
   const applyHighlight = () => {
