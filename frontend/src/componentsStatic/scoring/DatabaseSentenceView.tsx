@@ -11,6 +11,8 @@ type DatasetType = {
   japanese_dataset: any[];
   mandarin_v2_dataset: any[];
   bengali_dataset: any[];
+  cantonese_v2_dataset: any[];
+  french_dataset: any[];
 };
 
 type DatabaseSentenceViewProps = {
@@ -180,6 +182,12 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     } else if (language === "Bengali") {
       setSentenceData(dataset.bengali_dataset ?? []);
       setCurrentDatabase("annotation-tool-bengali");
+    } else if (language === "Cantonese-v2") {
+      setSentenceData(dataset.cantonese_v2_dataset ?? []);
+      setCurrentDatabase("annotation-tool-cantonese-v2");
+    } else if (language === "French") {
+      setSentenceData(dataset.french_dataset ?? []);
+      setCurrentDatabase("annotation-tool-french");
     }
   };
 
@@ -241,6 +249,22 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
           onClick={handleDatabaseFetch}
         >
           Bengali
+        </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Cantonese-v2" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Cantonese-v2
+        </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "French" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          French
         </button>
       </div>
 

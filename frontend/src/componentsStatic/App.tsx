@@ -20,6 +20,8 @@ type DatasetType = {
   japanese_dataset: any[];
   mandarin_v2_dataset: any[];
   bengali_dataset: any[];
+  cantonese_v2_dataset: any[];
+  french_dataset: any[];
 };
 
 const App: React.FC = () => {
@@ -294,6 +296,10 @@ const App: React.FC = () => {
             setAddedErrorSpans(formattedErrorSpans);
             setErrorSpans(formattedErrorSpans);
             setOriginalSpans(formattedErrorSpans);
+          } else {
+            setAddedErrorSpans([]);
+            setErrorSpans([]);
+            setOriginalSpans([]);
           }
         }
 
