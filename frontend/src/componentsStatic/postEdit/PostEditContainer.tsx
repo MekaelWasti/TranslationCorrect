@@ -166,7 +166,14 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   const handleInput = () => {
     // Don't process input if we're in the middle of an IME composition
-    if (isComposing) return;
+    if (isComposing || !editableDivRef.current) return;
+
+    const newText = editableDivRef.current.innerText || "";
+
+    if (newText === modifiedText) {
+      console.log("No change in modified text.");
+      return;
+    }
 
     // Check if any dropdown is currently open and abort if so
     const openDropdown = document.querySelector(".span-dropdown");
@@ -199,7 +206,6 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     caretOffsetRef.current = getCaretCharacterOffsetWithin(
       editableDivRef.current
     );
-    const newText = editableDivRef.current.innerText || "";
 
     // Log the new text for debugging
     console.log("New text after input:", newText);
@@ -349,7 +355,22 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     }
   };
 
-  const debouncedHandleInput = useDebounce(handleInput, 300);
+  // const debouncedHandleInput = useDebounce(handleInput, 300);
+
+  const useDebounce = (callback: () => void, delay: number) => {
+    const timerRef = useRef<number | null>(null);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(callback, delay);
+    };
+  };
+
+  const debouncedHandleInput = useDebounce(() => {
+    if (!isComposing) {
+      handleInput();
+    }
+  }, 300);
 
   const handleCompositionUpdate = (event: CompositionEvent) => {
     console.log("Composition updated:", event.data);
@@ -421,33 +442,33 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     window.getSelection()?.removeAllRanges();
   };
 
-  useEffect(() => {
-    const editableDiv = editableDivRef.current;
-    if (editableDiv) {
-      editableDiv.addEventListener("compositionstart", handleCompositionStart);
-      editableDiv.addEventListener(
-        "compositionupdate",
-        handleCompositionUpdate
-      );
-      editableDiv.addEventListener("compositionend", handleCompositionEnd);
-      editableDiv.addEventListener("input", debouncedHandleInput);
-    }
+  // useEffect(() => {
+  //   const editableDiv = editableDivRef.current;
+  //   if (editableDiv) {
+  //     editableDiv.addEventListener("compositionstart", handleCompositionStart);
+  //     editableDiv.addEventListener(
+  //       "compositionupdate",
+  //       handleCompositionUpdate
+  //     );
+  //     editableDiv.addEventListener("compositionend", handleCompositionEnd);
+  //     editableDiv.addEventListener("input", debouncedHandleInput);
+  //   }
 
-    return () => {
-      if (editableDiv) {
-        editableDiv.removeEventListener(
-          "compositionstart",
-          handleCompositionStart
-        );
-        editableDiv.removeEventListener(
-          "compositionupdate",
-          handleCompositionUpdate
-        );
-        editableDiv.removeEventListener("compositionend", handleCompositionEnd);
-        editableDiv.removeEventListener("input", debouncedHandleInput);
-      }
-    };
-  }, [debouncedHandleInput]);
+  //   return () => {
+  //     if (editableDiv) {
+  //       editableDiv.removeEventListener(
+  //         "compositionstart",
+  //         handleCompositionStart
+  //       );
+  //       editableDiv.removeEventListener(
+  //         "compositionupdate",
+  //         handleCompositionUpdate
+  //       );
+  //       editableDiv.removeEventListener("compositionend", handleCompositionEnd);
+  //       editableDiv.removeEventListener("input", debouncedHandleInput);
+  //     }
+  //   };
+  // }, [debouncedHandleInput]);
 
   // Restore caret after re-render.
   useEffect(() => {
@@ -543,7 +564,14 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         <div
           className="post-edit-translation-field"
           ref={editableDivRef}
-          onInput={handleInput}
+          // onInput={handleInput}
+          onInput={debouncedHandleInput}
+          onPaste={(e) => {
+            e.preventDefault();
+            const pastedText = e.clipboardData.getData("text/plain");
+            document.execCommand("insertText", false, pastedText);
+            handleInput();
+          }}
           contentEditable={true}
           suppressContentEditableWarning={true}
           onMouseUp={handleReactMouseUp}
