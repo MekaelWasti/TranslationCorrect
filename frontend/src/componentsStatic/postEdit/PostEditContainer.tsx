@@ -273,6 +273,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
     // generateDiff(machineTranslation, newText);
+
+    setTimeout(() => {
+      if (editableDivRef.current) {
+        setCaretPosition(editableDivRef.current, caretOffsetRef.current);
+      }
+    }, 0);
   };
 
   const applyHighlight = () => {
@@ -442,40 +448,33 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     window.getSelection()?.removeAllRanges();
   };
 
-  // useEffect(() => {
-  //   const editableDiv = editableDivRef.current;
-  //   if (editableDiv) {
-  //     editableDiv.addEventListener("compositionstart", handleCompositionStart);
-  //     editableDiv.addEventListener(
-  //       "compositionupdate",
-  //       handleCompositionUpdate
-  //     );
-  //     editableDiv.addEventListener("compositionend", handleCompositionEnd);
-  //     editableDiv.addEventListener("input", debouncedHandleInput);
-  //   }
-
-  //   return () => {
-  //     if (editableDiv) {
-  //       editableDiv.removeEventListener(
-  //         "compositionstart",
-  //         handleCompositionStart
-  //       );
-  //       editableDiv.removeEventListener(
-  //         "compositionupdate",
-  //         handleCompositionUpdate
-  //       );
-  //       editableDiv.removeEventListener("compositionend", handleCompositionEnd);
-  //       editableDiv.removeEventListener("input", debouncedHandleInput);
-  //     }
-  //   };
-  // }, [debouncedHandleInput]);
-
-  // Restore caret after re-render.
   useEffect(() => {
-    if (editableDivRef.current) {
-      setCaretPosition(editableDivRef.current, caretOffsetRef.current);
+    const editableDiv = editableDivRef.current;
+    if (editableDiv) {
+      editableDiv.addEventListener("compositionstart", handleCompositionStart);
+      editableDiv.addEventListener(
+        "compositionupdate",
+        handleCompositionUpdate
+      );
+      editableDiv.addEventListener("compositionend", handleCompositionEnd);
+      editableDiv.addEventListener("input", debouncedHandleInput);
     }
-  }, [modifiedText]);
+
+    return () => {
+      if (editableDiv) {
+        editableDiv.removeEventListener(
+          "compositionstart",
+          handleCompositionStart
+        );
+        editableDiv.removeEventListener(
+          "compositionupdate",
+          handleCompositionUpdate
+        );
+        editableDiv.removeEventListener("compositionend", handleCompositionEnd);
+        editableDiv.removeEventListener("input", debouncedHandleInput);
+      }
+    };
+  }, [debouncedHandleInput]);
 
   // After modifiedText updates (and the re-render completes), restore the caret position.
   useEffect(() => {
