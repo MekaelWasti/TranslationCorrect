@@ -4,6 +4,8 @@ import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 import { generateDiff } from "../postEdit/PostEditContainer"
+import { UserSelectorDropdown } from "../scoring/UserSelector";
+
 // Type Definitions
 type DatasetType = {
   mandarin_dataset: any[];
@@ -87,34 +89,37 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setHighlightedError([]);
 
     if (`${username}_annotations` in item.annotations) {
-
-      // Fetching the previous annotation data
-      console.log("user has done this annotation already, loading previously submitted annotation");
-      const prev_annotation = item.annotations[`${username}_annotations`];
-      console.log("previous annotation data:", prev_annotation);
-
-      // Displays the corrected version of the sentence done by the annotators
-      setDiffContent(prev_annotation.corrected_sentence);
-      setModifedText(prev_annotation.corrected_sentence);
-
-      // setAddedErrorSpans and setHighlightedError use different namings of attributes
-      // so we accomodate for that here
-      console.log("spans before mapping:", prev_annotation.annotatedSpans);
-      const modified_spans = prev_annotation.annotatedSpans.map(span => ({
-        ...span,
-        original_text: span.error_text_segment,
-        start_index_translation: span.start_index,
-        end_index_translation: span.end_index,
-      }));
-      console.log("new spans:", modified_spans);
-      
-      // This gives us the spans
-      setAddedErrorSpans(modified_spans);
-      setHighlightedError(modified_spans);
-
-      // This gives us the diff in the machine translation portion
-      generateDiff(item.mt, prev_annotation.corrected_sentence, setModifedText, setDiffContent);
+      handlePrevAnnotation(item);
     }
+  };
+
+  const handlePrevAnnotation = (item: any) => {
+    // Fetching the previous annotation data
+    console.log("user has done this annotation already, loading previously submitted annotation");
+    const prev_annotation = item.annotations[`${username}_annotations`];
+    console.log("previous annotation data:", prev_annotation);
+
+    // Displays the corrected version of the sentence done by the annotators
+    setDiffContent(prev_annotation.corrected_sentence);
+    setModifedText(prev_annotation.corrected_sentence);
+
+    // setAddedErrorSpans and setHighlightedError use different namings of attributes
+    // so we accomodate for that here
+    console.log("spans before mapping:", prev_annotation.annotatedSpans);
+    const modified_spans = prev_annotation.annotatedSpans.map(span => ({
+      ...span,
+      original_text: span.error_text_segment,
+      start_index_translation: span.start_index,
+      end_index_translation: span.end_index,
+    }));
+    console.log("new spans:", modified_spans);
+    
+    // This gives us the spans
+    setAddedErrorSpans(modified_spans);
+    setHighlightedError(modified_spans);
+
+    // This gives us the diff in the machine translation portion
+    generateDiff(item.mt, prev_annotation.corrected_sentence, setModifedText, setDiffContent);
   };
 
   const handleDatabaseFetch = async (
@@ -209,6 +214,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>MT</th>
               <th>Reference</th>
               <th>Complete</th>
+              <th>User</th>
             </tr>
           </thead>
           <tbody>
@@ -238,6 +244,18 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                     ) : (
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
+                  </td>
+                  <td>
+                    <UserSelectorDropdown
+                      username={username}
+                      setUsername={setUsername}
+                      item={item}
+                      setDiffContent={setDiffContent}
+                      setModifedText={setModifedText}
+                      setAddedErrorSpans={setAddedErrorSpans}
+                      setHighlightedError={setHighlightedError}
+                      generateDiff={generateDiff}
+                    />
                   </td>
                 </tr>
               ))
