@@ -14,6 +14,7 @@ type DatasetType = {
   cantonese_v2_dataset: any[];
   french_dataset: any[];
   tamil_dataset: any[];
+  shanghainese_dataset: any[];
 };
 
 type DatabaseSentenceViewProps = {
@@ -192,13 +193,16 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     } else if (language === "Tamil") {
       setSentenceData(dataset.tamil_dataset ?? []);
       setCurrentDatabase("annotation-tool-tamil");
+    } else if (language === "Shanghainese") {
+      setSentenceData(dataset.shanghainese_dataset ?? []);
+      setCurrentDatabase("annotation-tool-shanghainese");
     }
   };
 
   return (
     <div className="db-sentence-view-parent">
       <div>
-        <button
+        {/* <button
           className={`language-dataset-button ${
             activeLanguage == "Mandarin" ? "active" : ""
           }`}
@@ -229,7 +233,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
           onClick={handleDatabaseFetch}
         >
           Hokkien
-        </button>
+        </button> */}
         <button
           className={`language-dataset-button ${
             activeLanguage == "Japanese" ? "active" : ""
@@ -240,11 +244,11 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         </button>
         <button
           className={`language-dataset-button ${
-            activeLanguage == "Mandarin-v2" ? "active" : ""
+            activeLanguage == "Mandarin" ? "active" : ""
           }`}
           onClick={handleDatabaseFetch}
         >
-          Mandarin-v2
+          Mandarin
         </button>
         <button
           className={`language-dataset-button ${
@@ -256,11 +260,11 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         </button>
         <button
           className={`language-dataset-button ${
-            activeLanguage == "Cantonese-v2" ? "active" : ""
+            activeLanguage == "Cantonese" ? "active" : ""
           }`}
           onClick={handleDatabaseFetch}
         >
-          Cantonese-v2
+          Cantonese
         </button>
         <button
           className={`language-dataset-button ${
@@ -277,6 +281,14 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
           onClick={handleDatabaseFetch}
         >
           Tamil
+        </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Shanghainese" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Shanghainese
         </button>
       </div>
 
