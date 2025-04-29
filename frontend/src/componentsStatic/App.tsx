@@ -23,6 +23,7 @@ type DatasetType = {
   cantonese_v2_dataset: any[];
   french_dataset: any[];
   tamil_dataset: any[];
+  shanghainese_dataset: any[];
 };
 
 const App: React.FC = () => {
