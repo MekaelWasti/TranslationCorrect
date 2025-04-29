@@ -8,6 +8,7 @@ import cross from "../../assets/x_cross.svg";
 type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
+  shanghainese_dataset: any[];
 };
 
 type DatabaseSentenceViewProps = {
@@ -103,6 +104,9 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     } else if (language === "Cantonese") {
       setSentenceData(dataset.cantonese_dataset ?? []);
       setCurrentDatabase("annotation-tool-cantonese");
+    } else if (language === "Shanghainese") {
+      setSentenceData(dataset.shanghainese_dataset ?? []);
+      setCurrentDatabase("annotation-tool-shanghainese");
     }
   };
 
@@ -125,7 +129,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         >
           Cantonese
         </button>
-        <button
+        {/* <button
           className={`language-dataset-button ${
             activeLanguage == "Hakka" ? "active" : ""
           }`}
@@ -140,6 +144,14 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
           onClick={handleDatabaseFetch}
         >
           Hokkien
+        </button> */}
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Shanghainese" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Shanghainese
         </button>
       </div>
 
