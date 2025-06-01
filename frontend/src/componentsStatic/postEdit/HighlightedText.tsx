@@ -34,6 +34,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     updateSpanErrorType,
     errorSpans,
     setSpanSeverity,
+    deleteErrorSpan,
   } = useSpanEvalContext();
   const dropdownRef = useRef(null);
 
@@ -52,19 +53,30 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   const [hoveredHighlight, setHoveredHighlight] =
     useState<HighlightedError | null>(null);
 
+  // State to manage the visibility of the delete button
+  const [deleteButtonVisible, setDeleteButtonVisible] = useState(false);
+  const [deleteButtonStyle, setDeleteButtonStyle] = useState({
+    top: 0,
+    left: 0,
+  });
+
+  const [hoveredHighlightIdx, setHoveredHighlightIdx] = useState<number | null>(
+    null
+  );
+
   const handleMouseEnterSpan = (
     e: React.MouseEvent<HTMLSpanElement>,
-    highlight: HighlightedError
+    highlight: HighlightedError,
+    highlightIdx: number
   ) => {
+    // only update which span is “hovered” if no dropdown is open
     if (!spanDropdown) {
       setHoveredHighlight(highlight);
+      setHoveredHighlightIdx(highlightIdx);
     }
 
+    // always compute & show the delete button
     const rect = e.currentTarget.getBoundingClientRect();
-    setSpanPosition({
-      top: rect.top + window.scrollY,
-      left: rect.left + window.scrollX,
-    });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLSpanElement>) => {
@@ -79,7 +91,13 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   };
 
   const handleMouseLeaveSpan = () => {
-    setHoveredHighlight(null);
+    setTimeout(() => {
+      if (!document.querySelector(".delete-span-button:hover")) {
+        setDeleteButtonVisible(false);
+        setHoveredHighlightIdx(null);
+        setHoveredHighlight(null);
+      }
+    }, 100);
   };
 
   // useEffect(() => {
@@ -104,32 +122,38 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     highlight: HighlightedError,
     highlightIdx: number
   ) => {
-    // Update the select element's background color on any mouse click
-    const selectElement = document.querySelector(".span-score-section select");
-    if (selectElement) {
-      (selectElement as HTMLElement).style.backgroundColor =
-        colorMappings[highlight.error_type];
-      // Set text color to white for better visibility
-      (selectElement as HTMLElement).style.color = "#ffffff";
-    }
-
-    // Prevent left click from opening drop down menu since it is used for custom insertion
+    // Prevent left-click from bubbling and opening the dropdown
     if (e.button === 0) {
+      e.stopPropagation();
+
+      // color the select box
+      const selectEl = document.querySelector(".span-score-section select");
+      if (selectEl) {
+        (selectEl as HTMLElement).style.backgroundColor =
+          colorMappings[highlight.error_type];
+        (selectEl as HTMLElement).style.color = "#fff";
+      }
+
+      // set up tooltip/highlight state
       setSelectedSpan(highlight.error_type);
       setHoveredHighlight(highlight);
-      console.log(highlight.error_severity);
       setSpanSeverity(highlight.error_severity);
+      setSelectedSpanIdx(highlightIdx);
+      setSpanDropdown(false);
 
+      // position and show the delete button
       const rect = e.currentTarget.getBoundingClientRect();
-      setSpanPosition({
+      setDeleteButtonStyle({
         top: rect.top + window.scrollY,
         left: rect.left + window.scrollX,
       });
-      setSelectedSpanIdx(highlightIdx);
+      setDeleteButtonVisible(true);
 
       return;
     }
 
+    // ——— Right-click or other buttons open your type-selection dropdown ———
+    e.stopPropagation();
     if (highlight.error_type === selectedSpan && spanDropdown) {
       setSpanDropdown(false);
     } else {
@@ -144,11 +168,22 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
         left: rect.left + window.scrollX,
       });
     }
-    setHoveredHighlight(null);
-    setSelectedSpanIdx(highlightIdx);
-    // setHighlightInserted(false);
-    e.stopPropagation();
   };
+
+  useEffect(() => {
+    const onDocClick = (ev: MouseEvent) => {
+      // if we didn’t click on a highlight or the delete button...
+      if (
+        !(ev.target as HTMLElement).closest(".highlight, .delete-span-button")
+      ) {
+        setHoveredHighlight(null);
+        setHoveredHighlightIdx(null);
+        setDeleteButtonVisible(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
 
   useEffect(() => {
     const handleClickOutsideDropDown = (event: MouseEvent) => {
@@ -178,6 +213,21 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
       // Set text color to white for better visibility
       (selectElement as HTMLElement).style.color = "#ffffff";
     }
+  };
+
+  const handleDeleteSpan = (e: React.MouseEvent, idx: number) => {
+    e.stopPropagation();
+    // optional visual feedback
+    const button = e.currentTarget as HTMLButtonElement;
+    button.style.transform = "scale(0.9)";
+    button.style.opacity = "0.8";
+
+    setTimeout(() => {
+      deleteErrorSpan(idx);
+      setDeleteButtonVisible(false);
+      setHoveredHighlight(null);
+      setHoveredHighlightIdx(null);
+    }, 0);
   };
 
   // console.log(highlights);
@@ -258,12 +308,16 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
                   style={{
                     backgroundColor: colorMappings[h.error_type],
                   }}
-                  onMouseEnter={(e) => handleMouseEnterSpan(e, h.highlight)}
+                  // onMouseEnter={(e) => handleMouseEnterSpan(e, h.highlight)}
+                  onMouseEnter={(e) =>
+                    handleMouseEnterSpan(e, h.highlight, h.index)
+                  }
                   onMouseLeave={handleMouseLeaveSpan}
                   onMouseMove={handleMouseMove}
                   onMouseDown={(e) =>
                     !disableEdit && handleMouseClick(e, h.highlight, h.index)
                   }
+                  // onMouseDown={(e) => handleMouseClick(e, h.highlight, h.index)}
                   onContextMenu={(e) => {
                     // Stop context menu from appearing on right click in post edit section
                     if (!disableEdit) {
@@ -322,6 +376,16 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
             <strong>Correct Text:</strong> {hoveredHighlight.correct_text}
           </p>
         </div>
+      )}
+      {deleteButtonVisible && hoveredHighlightIdx !== null && !disableEdit && (
+        <button
+          className={`delete-span-button visible`}
+          style={deleteButtonStyle}
+          onClick={(e) => handleDeleteSpan(e, hoveredHighlightIdx)}
+          onMouseEnter={() => setDeleteButtonVisible(true)}
+        >
+          X
+        </button>
       )}
       {spanDropdown && mousePosition && (
         <div

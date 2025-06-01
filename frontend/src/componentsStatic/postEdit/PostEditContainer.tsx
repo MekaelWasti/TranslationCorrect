@@ -6,21 +6,17 @@ import {
 } from "diff-match-patch";
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import "../../index.css";
-import { HighlightedError } from "../../types";
 import { useSpanEvalContext } from "../SpanEvalProvider";
 import HighlightedText from "./HighlightedText";
 import { SpanScoreDropdown } from "../scoring/SpanScoreDropdown";
+import { clear } from "console";
 
 type PostEditContainerProps = {
   machineTranslation: string;
   setMachineTranslation: (newTranslation: string) => void;
-  highlightedError: HighlightedError[];
-  setHighlightedError: (newError: HighlightedError[]) => void;
   onDiffTextUpdate: (newDiffText: React.ReactNode) => void;
-  modifiedText;
+  modifiedText: string;
   setModifiedText: (newText: string) => void;
-  addedErrorSpans: [] | any;
-  setAddedErrorSpans: (newErrorSpans: [] | any) => void;
   diffContent: React.ReactNode;
   setDiffContent: (newDiffContent: React.ReactNode) => void;
 };
@@ -48,18 +44,15 @@ const useDebounce = (callback: Function, delay: number) => {
 export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   machineTranslation,
   setMachineTranslation,
-  highlightedError,
-  setHighlightedError,
   onDiffTextUpdate,
   modifiedText,
   setModifiedText,
-  addedErrorSpans,
-  setAddedErrorSpans,
   diffContent,
   setDiffContent,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
-  const { translatedText, addNewErrorSpan } = useSpanEvalContext();
+  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans } =
+    useSpanEvalContext();
 
   const caretOffsetRef = useRef<number>(0);
   const [showInsertButton, setShowInsertButton] = useState(false);
@@ -147,10 +140,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   const handleInput = () => {
     // Don't process input if we're in the middle of an IME composition
     if (isComposing) return;
-
-    console.log("Current highlighted errors:", highlightedError);
     if (!editableDivRef.current) return;
-    // Save the caret offset before updating state.
     caretOffsetRef.current = getCaretCharacterOffsetWithin(
       editableDivRef.current
     );
@@ -188,7 +178,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     // Update spans based on the change.
     // const updatedSpans = addedErrorSpans.map((span: any) => {
-    const updatedSpans = highlightedError.map((span: any) => {
+    const updatedSpans = errorSpans.map((span) => {
       const s = span.start_index_translation;
       const e = span.end_index_translation;
       let new_s = s;
@@ -216,10 +206,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         end_index_translation: new_e,
       };
     });
-
-    console.log("Updated spans:", updatedSpans);
-    setAddedErrorSpans(updatedSpans);
-    setHighlightedError(updatedSpans);
+    clearErrorSpans();
+    // assume context setErrorSpans(updatedSpans)
+    // reposition caret and update diff
     setModifiedText(newText);
     generateDiff(machineTranslation, newText);
   };
@@ -235,14 +224,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     const selectedText = selection.toString();
     if (!selectedText.trim()) return;
 
-    console.log(
-      "AH",
-      modifiedText.substring(start, start + selection.toString().length)
-    );
-    const original_text = modifiedText.substring(
-      start,
-      start + selectedText.length
-    );
+    const original_text = selectedText;
     addNewErrorSpan(
       original_text,
       start,
@@ -250,57 +232,17 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       "Addition",
       "Minor"
     );
-
-    setAddedErrorSpans([
-      ...addedErrorSpans,
-      {
-        original_text: original_text,
-        start_index_translation: start,
-        end_index_translation: start + selectedText.length,
-        error_type: "Addition",
-        error_severity: "Minor",
-      },
-    ]);
-
-    setHighlightedError([
-      ...highlightedError,
-      {
-        original_text: original_text,
-        start_index_translation: start,
-        end_index_translation: start + selectedText.length,
-        error_type: "Addition",
-        error_severity: "Minor",
-      },
-    ]);
   };
 
   const handleClearSpansButton = () => {
     if (clearButtonClicked) {
-      // Second click - perform the clear operation
-      setAddedErrorSpans([]);
-      setHighlightedError([]);
+      clearErrorSpans();
       setModifiedText(machineTranslation);
       setDiffContent(machineTranslation);
-
-      // Reset the span severity select button
-      const selectElement = document.querySelector(
-        ".span-score-section select"
-      );
-      if (selectElement) {
-        (selectElement as HTMLElement).style.backgroundColor = "#222222";
-        (selectElement as HTMLElement).style.color = "#ffffff";
-        (selectElement as HTMLSelectElement).value = "Minor";
-      }
-
-      setClearButtonClicked(false); // Reset the state
+      setClearButtonClicked(false);
     } else {
-      // First click - just update the state
       setClearButtonClicked(true);
-
-      // Reset after 3 seconds if second click doesn't happen
-      setTimeout(() => {
-        setClearButtonClicked(false);
-      }, 3000);
+      setTimeout(() => setClearButtonClicked(false), 3000);
     }
   };
 
@@ -428,43 +370,22 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
     // Convert diffs into React elements
     const diffElements = diffs.map(([type, text], index) => {
-      if (type === DIFF_INSERT) {
+      if (type === DIFF_INSERT)
         return (
-          <span className="post-edit-additions" key={`diff-${index}`}>
+          <span key={index} className="post-edit-additions">
             {text}
           </span>
         );
-      } else if (type === DIFF_DELETE) {
+      if (type === DIFF_DELETE)
         return (
-          <span className="post-edit-deletions" key={`diff-${index}`}>
+          <span key={index} className="post-edit-deletions">
             {text}
           </span>
         );
-      } else {
-        // For equal text, return as is
-        return text;
-      }
+      return text;
     });
-
-    // Convert array of elements to a single React element
-    const diffContent = <>{diffElements}</>;
-
-    // Update state and pass the diffContent to parent component
-    onDiffTextUpdate(diffContent);
+    onDiffTextUpdate(<>{diffElements}</>);
   };
-
-  useEffect(() => {
-    document.addEventListener("mouseup", handleNativeMouseUp);
-    return () => {
-      document.removeEventListener("mouseup", handleNativeMouseUp);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isComposing) {
-      handleInput();
-    }
-  }, [isComposing]);
 
   //   Return JSX
   return (
@@ -475,7 +396,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         </div>
         <div className="post-edit-section-header-buttons">
           <button className="start-annotation-button">Start Annotation</button>
-          <button className={`insert-span-button`} onClick={applyHighlight}>
+          <button className="insert-span-button" onClick={applyHighlight}>
             Insert Span
           </button>
           {/* <button className="custom-correction-button">Custom Correction</button> */}
@@ -492,15 +413,13 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         <div
           className="post-edit-translation-field"
           ref={editableDivRef}
-          onInput={handleInput}
-          contentEditable={true}
-          suppressContentEditableWarning={true}
+          contentEditable
+          suppressContentEditableWarning
           onMouseUp={handleReactMouseUp}
         >
           <HighlightedText
             text={modifiedText}
-            // highlights={addedErrorSpans}
-            highlights={highlightedError}
+            highlights={errorSpans}
             highlightKey="end_index_translation"
             highlightInserted={highlightInserted}
           />
@@ -514,7 +433,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
             top: buttonPosition.top + 20,
             left: `calc(${buttonPosition.left}px - 43px)`,
           }}
-          onClick={handleInsertSpanClick}
+          onClick={applyHighlight}
         >
           +
         </button>
@@ -522,3 +441,5 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     </div>
   );
 };
+
+export default PostEditContainer;

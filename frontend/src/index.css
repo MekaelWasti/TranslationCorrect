@@ -1537,3 +1537,34 @@ select:hover {
   background-color: rgb(255, 255, 255);
   color: black;
 }
+
+.delete-span-button {
+  position: absolute;
+  background-color: #cf2020;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  min-width: 10px;
+  width: 24px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.35s ease-in-out;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transform: translateY(5px);
+}
+.delete-span-button.visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+.delete-span-button:hover {
+  background-color: #ff3333;
+}

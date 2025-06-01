@@ -36,6 +36,8 @@ type SpanEvalContextType = {
     error_type: string,
     severity: string
   ) => void;
+  clearErrorSpans: () => void;
+  deleteErrorSpan: (idx: number) => void;
   selectedSpanIdx: number | undefined;
   setSelectedSpanIdx: Dispatch<SetStateAction<number | undefined>>;
   diffContent: React.ReactNode;
@@ -136,6 +138,20 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     setErrorSpans(newErrorSpans);
   };
 
+  const deleteErrorSpan = (idx: number) => {
+    const newErrorSpans = [
+      ...errorSpans.slice(0, idx),
+      ...errorSpans.slice(idx + 1),
+    ];
+    setErrorSpans(newErrorSpans);
+    // adjust selectedSpanIdx if needed
+    if (selectedSpanIdx === idx) {
+      setSelectedSpanIdx(undefined);
+    } else if (selectedSpanIdx !== undefined && selectedSpanIdx > idx) {
+      setSelectedSpanIdx(selectedSpanIdx - 1);
+    }
+  };
+
   const [selectedSpanIdx, setSelectedSpanIdx] = useState<number>();
   const [spanScores, setSpanScores] = useState<{
     // [key: number]: number;
@@ -145,6 +161,11 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
   useEffect(() => {
     setSpanScores(spanScores);
   }, [spanScores]);
+
+  const clearErrorSpans = () => {
+    setErrorSpans([]);
+    setSelectedSpanIdx(undefined);
+  };
 
   const contextValue = {
     origText,
@@ -161,6 +182,8 @@ export const SpanEvalProvider = ({ children }: SpanEvalProviderProps) => {
     setSpanSeverity,
     updateSpanSeverity,
     addNewErrorSpan,
+    deleteErrorSpan,
+    clearErrorSpans,
     diffContent,
     setDiffContent,
     selectedSpanIdx,

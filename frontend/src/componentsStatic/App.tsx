@@ -339,13 +339,13 @@ const App: React.FC = () => {
             <PostEditContainer
               machineTranslation={machineTranslation}
               setMachineTranslation={setTranslatedText}
-              highlightedError={highlightedError!}
-              setHighlightedError={setErrorSpans}
+              // highlightedError={highlightedError!}
+              // setHighlightedError={setErrorSpans}
               onDiffTextUpdate={handleDiffTextUpdate}
               modifiedText={modifiedText}
               setModifiedText={setModifiedText}
-              addedErrorSpans={addedErrorSpans}
-              setAddedErrorSpans={setAddedErrorSpans}
+              // addedErrorSpans={addedErrorSpans}
+              // setAddedErrorSpans={setAddedErrorSpans}
               diffContent={diffContent}
               setDiffContent={setDiffContent}
             />
