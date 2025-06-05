@@ -19,6 +19,7 @@ type HighlightTextProps = {
     | "error_type";
   disableEdit?: boolean;
   highlightInserted?: boolean;
+  setHighlightInserted?: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const HighlightedText: React.FC<HighlightTextProps> = ({
@@ -27,6 +28,8 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   highlightKey,
   disableEdit = false,
   highlightInserted = false,
+  setHighlightInserted,
+  setHighlightSeverity,
 }) => {
   const {
     selectedSpanIdx,
@@ -40,6 +43,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
 
   const [selectedSpan, setSelectedSpan] = useState("");
   const [spanDropdown, setSpanDropdown] = useState(false);
+  const [dropdownAnimation, setDropdownAnimation] = useState("");
   const [mousePosition, setMousePosition] = useState<{
     x: number;
     y: number;
@@ -50,33 +54,57 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     top: number;
     left: number;
   } | null>(null);
+  const [initialSpanPosition, setInitialSpanPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
   const [hoveredHighlight, setHoveredHighlight] =
     useState<HighlightedError | null>(null);
+  const [hoveredHighlightIdx, setHoveredHighlightIdx] = useState<number | null>(
+    null
+  );
 
-  // State to manage the visibility of the delete button
+  const [spanDropdownVisible, setSpanDropdownVisible] = useState(false);
   const [deleteButtonVisible, setDeleteButtonVisible] = useState(false);
   const [deleteButtonStyle, setDeleteButtonStyle] = useState({
     top: 0,
     left: 0,
   });
 
-  const [hoveredHighlightIdx, setHoveredHighlightIdx] = useState<number | null>(
-    null
-  );
-
   const handleMouseEnterSpan = (
     e: React.MouseEvent<HTMLSpanElement>,
     highlight: HighlightedError,
     highlightIdx: number
   ) => {
-    // only update which span is “hovered” if no dropdown is open
+    // Check if the span is inside the post-edit-translation-field
     if (!spanDropdown) {
-      setHoveredHighlight(highlight);
-      setHoveredHighlightIdx(highlightIdx);
+      if (!e.currentTarget.closest(".post-edit-translation-field")) {
+        setHoveredHighlight(highlight);
+      }
+      {
+        setHoveredHighlightIdx(highlightIdx);
+        setDeleteButtonVisible(true);
+      }
     }
 
-    // always compute & show the delete button
     const rect = e.currentTarget.getBoundingClientRect();
+    setSpanPosition({
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX,
+    });
+
+    // Position the delete button centered horizontally over the span
+    // Calculate the center point of the span
+    const spanWidth = rect.width;
+    // const deleteButtonWidth = spanWidth < 24 ? spanWidth : 24; // Use span width if less than 24px
+    const deleteButtonWidth = Math.max(spanWidth / 3, 30); // Use span width if less than 24px
+
+    setDeleteButtonStyle({
+      top: rect.top + window.scrollY - 30, // Position above the span with a small gap
+      // left: rect.left + window.scrollX + spanWidth - deleteButtonWidth, // Center horizontally
+      left: rect.left + window.scrollX + spanWidth / 2 - deleteButtonWidth / 2, // Center horizontally
+      width: deleteButtonWidth, // Set the button width
+    });
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLSpanElement>) => {
@@ -88,16 +116,12 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
       top: e.pageY + 25,
       left: e.pageX - 125,
     });
-  };
 
-  const handleMouseLeaveSpan = () => {
-    setTimeout(() => {
-      if (!document.querySelector(".delete-span-button:hover")) {
-        setDeleteButtonVisible(false);
-        setHoveredHighlightIdx(null);
-        setHoveredHighlight(null);
-      }
-    }, 100);
+    // // Position the delete button near the cursor
+    // setDeleteButtonStyle({
+    //   top: e.pageY - 40, // Position above the cursor
+    //   left: e.pageX - 45, // Center horizontally
+    // });
   };
 
   // useEffect(() => {
@@ -117,78 +141,117 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
   //   };
   // }, [highlightInserted]);
 
-  const handleMouseClick = (
-    e: React.MouseEvent<HTMLSpanElement>,
-    highlight: HighlightedError,
-    highlightIdx: number
-  ) => {
-    // Prevent left-click from bubbling and opening the dropdown
-    if (e.button === 0) {
-      e.stopPropagation();
-
-      // color the select box
-      const selectEl = document.querySelector(".span-score-section select");
-      if (selectEl) {
-        (selectEl as HTMLElement).style.backgroundColor =
-          colorMappings[highlight.error_type];
-        (selectEl as HTMLElement).style.color = "#fff";
-      }
-
-      // set up tooltip/highlight state
-      setSelectedSpan(highlight.error_type);
-      setHoveredHighlight(highlight);
-      setSpanSeverity(highlight.error_severity);
-      setSelectedSpanIdx(highlightIdx);
-      setSpanDropdown(false);
-
-      // position and show the delete button
-      const rect = e.currentTarget.getBoundingClientRect();
-      setDeleteButtonStyle({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
-      setDeleteButtonVisible(true);
-
-      return;
-    }
-
-    // ——— Right-click or other buttons open your type-selection dropdown ———
-    e.stopPropagation();
-    if (highlight.error_type === selectedSpan && spanDropdown) {
-      setSpanDropdown(false);
-    } else {
-      setSelectedSpan(highlight.error_type);
-      setSpanSeverity(highlight.error_severity);
-      setSpanDropdown(true);
-      setHoveredHighlight(highlight);
-
-      const rect = e.currentTarget.getBoundingClientRect();
-      setSpanPosition({
-        top: rect.top + window.scrollY,
-        left: rect.left + window.scrollX,
-      });
-    }
-  };
-
-  useEffect(() => {
-    const onDocClick = (ev: MouseEvent) => {
-      // if we didn’t click on a highlight or the delete button...
+  const handleMouseLeaveSpan = () => {
+    // Use a small delay to prevent the button from disappearing immediately
+    // when the mouse moves from the span to the button
+    setTimeout(() => {
+      // Check if the mouse is over the delete button or the span
       if (
-        !(ev.target as HTMLElement).closest(".highlight, .delete-span-button")
+        !document.querySelector(".delete-span-button:hover") &&
+        !document.querySelector(".highlight:hover")
       ) {
         setHoveredHighlight(null);
         setHoveredHighlightIdx(null);
         setDeleteButtonVisible(false);
       }
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
+    }, 100);
+  };
+
+  const handleMouseClick = (
+    e: React.MouseEvent<HTMLSpanElement>,
+    highlight: HighlightedError,
+    highlightIdx: number
+  ) => {
+    // Update the select element's background color on any mouse click
+    const selectElement = document.querySelector(".span-score-section select");
+    if (selectElement) {
+      (selectElement as HTMLElement).style.backgroundColor =
+        colorMappings[highlight.error_type];
+      // Set text color to white for better visibility
+      (selectElement as HTMLElement).style.color = "#ffffff";
+    }
+
+    // Prevent left click from opening drop down menu since it is used for custom insertion
+    if (e.button === 0) {
+      setSelectedSpan(highlight.error_type);
+
+      if (!e.currentTarget.closest(".post-edit-translation-field")) {
+        setHoveredHighlight(highlight);
+      }
+      console.log(highlight.error_severity);
+      setSpanSeverity(highlight.error_severity);
+
+      const rect = e.currentTarget.getBoundingClientRect();
+
+      // Calculate the center position of the highlight
+      const centerX = rect.left + rect.width / 2;
+
+      const newPosition = {
+        top: rect.top + window.scrollY,
+        left: centerX + window.scrollX - 75, // Center the dropdown (assuming dropdown width ~150px)
+      };
+      setSpanPosition(newPosition);
+
+      // Store the initial position when clicking on a span
+      setInitialSpanPosition(newPosition);
+
+      setSelectedSpanIdx(highlightIdx);
+
+      return;
+    }
+
+    if (highlight.error_type === selectedSpan && spanDropdown) {
+      setDropdownAnimation("fade-out");
+      setTimeout(() => {
+        setSpanDropdown(false);
+        setDropdownAnimation("");
+      }, 250);
+    } else {
+      setSelectedSpan(highlight.error_type);
+      setSpanSeverity(highlight.error_severity);
+
+      // First set the dropdown to visible, then apply the animation in the next frame
+      setSpanDropdown(true);
+
+      // Use requestAnimationFrame to ensure the DOM has updated before applying the animation
+      requestAnimationFrame(() => {
+        setDropdownAnimation("fade-in");
+      });
+
+      setHoveredHighlight(highlight);
+
+      const rect = e.currentTarget.getBoundingClientRect();
+
+      // Calculate the center position of the highlight
+      const centerX = rect.left + rect.width / 2;
+
+      const newPosition = {
+        top: rect.bottom + window.scrollY + 10, // Position below the highlight with a 5px gap
+        left: centerX + window.scrollX - 75, // Center the dropdown (assuming dropdown width ~150px)
+      };
+      setSpanPosition(newPosition);
+
+      // Store the initial position when opening dropdown
+      setInitialSpanPosition(newPosition);
+    }
+    setHoveredHighlight(null);
+    setSelectedSpanIdx(highlightIdx);
+    // setHighlightInserted(false);
+    e.stopPropagation();
+  };
 
   useEffect(() => {
     const handleClickOutsideDropDown = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setSpanDropdown(false);
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target) &&
+        spanDropdown
+      ) {
+        setDropdownAnimation("fade-out");
+        setTimeout(() => {
+          setSpanDropdown(false);
+          setDropdownAnimation("");
+        }, 250);
       }
     };
 
@@ -203,8 +266,18 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     updateSpanErrorType(selectedSpanIdx!, type);
     console.log(errorSpans);
 
-    setSpanDropdown(false);
+    // Add fade-out animation before closing the dropdown
+    setDropdownAnimation("fade-out");
 
+    // Close the dropdown after a short delay to allow the animation to play
+    setTimeout(() => {
+      setSpanDropdown(false);
+      setDropdownAnimation("");
+      // Reset highlight inserted flag if it was set
+      if (highlightInserted) {
+        setHighlightInserted(false);
+      }
+    }, 250);
     // Update the select element's background color on error type selection
     const selectElement = document.querySelector(".span-score-section select");
     if (selectElement) {
@@ -212,21 +285,29 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
         colorMappings[type];
       // Set text color to white for better visibility
       (selectElement as HTMLElement).style.color = "#ffffff";
+      // Add focus to the select element
+      (selectElement as HTMLElement).focus();
+      selectElement.dispatchEvent(
+        new MouseEvent("mousedown", { bubbles: true })
+      );
     }
   };
 
   const handleDeleteSpan = (e: React.MouseEvent, idx: number) => {
     e.stopPropagation();
-    // optional visual feedback
+
+    // Add visual feedback before deleting
     const button = e.currentTarget as HTMLButtonElement;
     button.style.transform = "scale(0.9)";
     button.style.opacity = "0.8";
 
+    // Delay the deletion slightly to show the animation
     setTimeout(() => {
       deleteErrorSpan(idx);
       setDeleteButtonVisible(false);
       setHoveredHighlight(null);
       setHoveredHighlightIdx(null);
+      // }, 150);
     }, 0);
   };
 
@@ -308,7 +389,6 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
                   style={{
                     backgroundColor: colorMappings[h.error_type],
                   }}
-                  // onMouseEnter={(e) => handleMouseEnterSpan(e, h.highlight)}
                   onMouseEnter={(e) =>
                     handleMouseEnterSpan(e, h.highlight, h.index)
                   }
@@ -317,7 +397,6 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
                   onMouseDown={(e) =>
                     !disableEdit && handleMouseClick(e, h.highlight, h.index)
                   }
-                  // onMouseDown={(e) => handleMouseClick(e, h.highlight, h.index)}
                   onContextMenu={(e) => {
                     // Stop context menu from appearing on right click in post edit section
                     if (!disableEdit) {
@@ -358,45 +437,163 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
 
   const { elements } = getHighlightedText(React.Children.toArray(text), ranges);
 
+  // Effect to handle automatic dropdown opening when a span is inserted
+  useEffect(() => {
+    if (highlightInserted && highlights.length > 0 && !spanDropdown) {
+      // Get the last inserted highlight (assuming it's the most recently added one)
+      const lastHighlight = highlights[highlights.length - 1];
+      const lastHighlightIdx = highlights.length - 1;
+
+      // Set the selected span to the last highlight's error type
+      setSelectedSpan(lastHighlight.error_type);
+      setSpanSeverity(lastHighlight.error_severity);
+
+      // Set the selected span index to the last highlight's index
+      setSelectedSpanIdx(lastHighlightIdx);
+
+      // Calculate position for the dropdown
+      // We need to find the DOM element for the highlight
+      // Use a small timeout to ensure the DOM has been updated
+      setTimeout(() => {
+        // Find all highlight elements
+        const highlightElements = document.querySelectorAll(".highlight");
+
+        if (highlightElements.length > 0) {
+          // Find the highlight element that corresponds to our newly inserted span
+          // We'll look for the element with text content matching our highlight
+          let targetElement = null;
+
+          // First try to find the exact match by content and position
+          for (let i = 0; i < highlightElements.length; i++) {
+            const el = highlightElements[i];
+            const elText = el.textContent || "";
+
+            // Check if this element matches our highlight
+            if (
+              elText === lastHighlight.translated_text ||
+              elText === lastHighlight.original_text
+            ) {
+              targetElement = el;
+              // If we find a match, use it
+              break;
+            }
+          }
+
+          // If we couldn't find an exact match, fallback to the last highlight element
+          if (!targetElement && highlightElements.length > 0) {
+            targetElement = highlightElements[highlightElements.length - 1];
+          }
+
+          if (targetElement) {
+            const rect = targetElement.getBoundingClientRect();
+
+            // Calculate the center position of the highlight
+            const centerX = rect.left + rect.width / 2;
+
+            // Position the dropdown below the highlight with some offset and centered
+            const newPosition = {
+              top: rect.bottom + window.scrollY + 10, // Position below the highlight with a 5px gap
+              left: centerX + window.scrollX - 75, // Center the dropdown (assuming dropdown width ~150px)
+            };
+
+            setSpanPosition(newPosition);
+            // Store the initial position for the dropdown
+            setInitialSpanPosition(newPosition);
+
+            setSpanDropdown(true);
+
+            // Apply the fade-in animation
+            requestAnimationFrame(() => {
+              setDropdownAnimation("fade-in");
+            });
+          }
+        }
+      }, 50);
+    }
+  }, [highlightInserted, highlights]);
+
   return (
     <div>
       {elements}
       {hoveredHighlight && mousePosition && (
         <div className="error-tooltip" style={tooltipStyle}>
-          <p style={{ color: colorMappings[hoveredHighlight.error_type] }}>
-            <strong>Error Type:</strong> {hoveredHighlight.error_type}
-          </p>
-          <p>
-            <strong>Original Text:</strong> {hoveredHighlight.original_text}
-          </p>
-          <p>
-            <strong>Translated Text:</strong> {hoveredHighlight.translated_text}
-          </p>
-          <p>
-            <strong>Correct Text:</strong> {hoveredHighlight.correct_text}
-          </p>
+          <h3 style={{ color: colorMappings[hoveredHighlight.error_type] }}>
+            Error Type: {hoveredHighlight.error_type}
+          </h3>
+          <div className="error-tooltip-text-display">
+            <p
+              style={{
+                color:
+                  hoveredHighlight.error_severity === "Minor"
+                    ? "#ffd000"
+                    : hoveredHighlight.error_severity === "Major"
+                    ? "orange"
+                    : "red",
+              }}
+            >
+              <strong style={{ color: "white" }}>Error Severity:</strong>{" "}
+              {hoveredHighlight.error_severity}
+            </p>
+            {hoveredHighlight.error_confidence && (
+              <p>
+                <strong>Error Confidence:</strong>{" "}
+                {hoveredHighlight.error_confidence}
+              </p>
+            )}
+            <p>
+              <strong>Original Text:</strong> {hoveredHighlight.original_text}
+            </p>
+            {hoveredHighlight.translated_text && (
+              <p>
+                <strong>Translated Text:</strong>{" "}
+                {hoveredHighlight.translated_text}
+              </p>
+            )}
+            <p>
+              <strong>Correct Text:</strong> {hoveredHighlight.correct_text}
+            </p>
+          </div>
         </div>
       )}
       {deleteButtonVisible && hoveredHighlightIdx !== null && !disableEdit && (
         <button
-          className={`delete-span-button visible`}
+          className={`delete-span-button ${
+            deleteButtonVisible ? "visible" : ""
+          }`}
           style={deleteButtonStyle}
           onClick={(e) => handleDeleteSpan(e, hoveredHighlightIdx)}
           onMouseEnter={() => setDeleteButtonVisible(true)}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onKeyPress={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
         >
-          X
+          {/* Delete */}X
         </button>
       )}
-      {spanDropdown && mousePosition && (
+      {spanDropdown && (
         <div
           ref={dropdownRef}
-          className="span-dropdown"
+          className={`span-dropdown ${dropdownAnimation}`}
           onContextMenu={(event) => event.preventDefault()}
           contentEditable={false}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onKeyPress={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
           style={{
             position: "absolute",
-            left: spanPosition!.left - 20,
-            top: spanPosition!.top + 25,
+            left: initialSpanPosition?.left || spanPosition?.left,
+            top: initialSpanPosition?.top || spanPosition?.top,
+            zIndex: 1000,
           }}
         >
           <ul>
