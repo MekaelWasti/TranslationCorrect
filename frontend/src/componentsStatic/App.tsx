@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../index.css";
 import HighlightedText from "./postEdit/HighlightedText";
-import { PostEditContainer } from "./postEdit/PostEditContainer";
+import { generateDiff, PostEditContainer } from "./postEdit/PostEditContainer";
 import { ScoringContainer } from "./scoring/ScoringContainer";
 import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
@@ -9,6 +9,7 @@ import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { UserSelectorDropdown } from "./scoring/UserSelector";
 
 import logo from "../assets/logo.svg";
 
@@ -295,6 +296,19 @@ const App: React.FC = () => {
               dataset={dataset}
               setDataset={setDataset}
             />
+            <div className='annotator-selector'>
+              <UserSelectorDropdown
+                username={username}
+                setUsername={setUsername}
+                sentenceData={sentenceData}
+                sentenceID={sentenceID}
+                setDiffContent={setDiffContent}
+                setModifedText={setModifiedText}
+                setAddedErrorSpans={setAddedErrorSpans}
+                setHighlightedError={setErrorSpans}
+                generateDiff={generateDiff}
+              />
+            </div>
             <div className="go-to-last-annotated-button-container">
               <button
                 className="go-to-last-annotated-button"
