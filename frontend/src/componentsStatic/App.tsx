@@ -9,6 +9,7 @@ import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { ComparisonContainer } from "./postEdit/ComparisonContainer";
 
 import logo from "../assets/logo.svg";
 
@@ -336,7 +337,8 @@ const App: React.FC = () => {
               overallScore={overallScore}
               setOverallScore={setOverallScore}
             /> */}
-            <PostEditContainer
+            {/* <PostEditContainer */}
+            <ComparisonContainer
               machineTranslation={machineTranslation}
               setMachineTranslation={setTranslatedText}
               highlightedError={highlightedError!}
