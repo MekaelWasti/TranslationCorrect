@@ -4,6 +4,42 @@ import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 
+/**
+ * 📝 How to assign sentences to annotators:
+ *
+ * - Get annotators USERNAME (case-sensitive) to assign them a list of sentences.
+ * - You can give a mix of:
+ *    → one sentence (just a number, like 12)
+ *    → or a range (in square brackets, like [5, 10])
+ *
+ * ✅ Examples:
+ *   kim: [5, [10, 15], [30, 35], 44] → means kim gets:
+ *     - sentence 5
+ *     - sentences 10 to 15 (inclusive)
+ *     - sentences 30 to 35 (inclusive)
+ *     - and sentence 44
+ *
+ * ✅ Example format:
+ *    const assignedMandarin = {
+ *        kim: [1, [5, 10], 20],
+ *        alice: [[15, 18], 25, 30],
+ *        bob: [[40, 45]],
+ *     };
+ *
+ * ⚠️ Indexing rules:
+ *   - Mandarin and Shanghainese: start at 1
+ *   - Cantonese: starts at 0
+ *   → Just write the number you see in the dataset.
+ *
+ * 🔒 No overlaps unless on purpose, as it will show up more than once.
+ */
+
+const assignedMandarin = {};
+
+const assignedCantonese = {};
+
+const assignedShanghainese = {};
+
 // Type Definitions
 type DatasetType = {
   mandarin_dataset: any[];
@@ -88,6 +124,25 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setHighlightedError([]);
   };
 
+  // Helper function to expand assigned indexes
+  const expandAssignedIndexes = (
+    assignments: (number | [number, number])[],
+    offset: number = 0
+  ): number[] => {
+    const result: number[] = [];
+    for (const item of assignments) {
+      if (typeof item === "number") {
+        result.push(item + offset);
+      } else {
+        const [start, end] = item;
+        for (let i = start; i <= end; i++) {
+          result.push(i + offset);
+        }
+      }
+    }
+    return result;
+  };
+
   const handleDatabaseFetch = async (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -99,14 +154,53 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     if (!dataset) {
       console.error("Dataset is undefined");
     } else if (language === "Mandarin") {
-      setSentenceData(dataset.mandarin_dataset ?? []);
-      setCurrentDatabase("annotation-tool-dataset");
+      const fullData = dataset.mandarin_dataset ?? [];
+
+      if (username in assignedMandarin) {
+        const assignedIndexes = assignedMandarin[username];
+        const expandedIndexes = expandAssignedIndexes(assignedIndexes, -1); // Adjust for 0-based index
+        const slicedData = expandedIndexes
+          .filter((i) => i >= 0 && i < fullData.length) // prevent out-of-bounds access
+          .map((i) => fullData[i]);
+        setSentenceData(slicedData);
+        setCurrentDatabase("annotation-tool-dataset");
+      } else {
+        // If no specific assignment, load the full dataset
+        setSentenceData(fullData);
+        setCurrentDatabase("annotation-tool-dataset");
+      }
     } else if (language === "Cantonese") {
-      setSentenceData(dataset.cantonese_dataset ?? []);
-      setCurrentDatabase("annotation-tool-cantonese");
+      const fullData = dataset.cantonese_dataset ?? [];
+
+      if (username in assignedCantonese) {
+        const assignedIndexes = assignedCantonese[username];
+        const expandedIndexes = expandAssignedIndexes(assignedIndexes, 0); // No offset
+        const slicedData = expandedIndexes
+          .filter((i) => i >= 0 && i < fullData.length) // prevent out-of-bounds access
+          .map((i) => fullData[i]);
+        setSentenceData(slicedData);
+        setCurrentDatabase("annotation-tool-cantonese");
+      } else {
+        // If no specific assignment, load the full dataset
+        setSentenceData(fullData);
+        setCurrentDatabase("annotation-tool-cantonese");
+      }
     } else if (language === "Shanghainese") {
-      setSentenceData(dataset.shanghainese_dataset ?? []);
-      setCurrentDatabase("annotation-tool-shanghainese");
+      const fullData = dataset.shanghainese_dataset ?? [];
+
+      if (username in assignedShanghainese) {
+        const assignedIndexes = assignedShanghainese[username];
+        const expandedIndexes = expandAssignedIndexes(assignedIndexes, -1); // Adjust for 0-based index
+        const slicedData = expandedIndexes
+          .filter((i) => i >= 0 && i < fullData.length) // prevent out-of-bounds access
+          .map((i) => fullData[i]);
+        setSentenceData(slicedData);
+        setCurrentDatabase("annotation-tool-shanghainese");
+      } else {
+        // If no specific assignment, load the full dataset
+        setSentenceData(fullData);
+        setCurrentDatabase("annotation-tool-shanghainese");
+      }
     }
   };
 
