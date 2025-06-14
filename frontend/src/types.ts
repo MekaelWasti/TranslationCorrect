@@ -8,6 +8,7 @@ export interface HighlightedError {
   end_index_translation: number;
   error_type: string;
   error_severity: string;
+  error_confidence?: string;
 }
 
 // export const colorMappings: { [key: string]: string } = {
@@ -32,12 +33,12 @@ export interface HighlightedError {
 // };
 
 export const colorMappings: { [key: string]: string } = {
-  "Addition": "#FF5733",
-  "Omission": "#00A0F0",
-  "Mistranslation": "#59c00a",
-  "Untranslated": "#D3365A",
-  "Grammar": "#D2691E",
-  "Spelling": "#9B59B6",
-  "Typography": "#1ABC9C",
-  "Unintelligible": "#F39C12"
+  Addition: "#FF5733",
+  Omission: "#00A0F0",
+  Mistranslation: "#59c00a",
+  Untranslated: "#D3365A",
+  Grammar: "#D2691E",
+  Spelling: "#9B59B6",
+  Typography: "#1ABC9C",
+  Unintelligible: "#F39C12",
 };
