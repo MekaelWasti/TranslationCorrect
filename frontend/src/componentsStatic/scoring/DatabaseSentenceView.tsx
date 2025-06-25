@@ -34,11 +34,11 @@ import cross from "../../assets/x_cross.svg";
  * 🔒 No overlaps unless on purpose, as it will show up more than once.
  */
 
-const assignedMandarin = {};
+type AssignedIndexes = Record<string, (number | [number, number])[]>;
 
-const assignedCantonese = {};
-
-const assignedShanghainese = {};
+const assignedMandarin: AssignedIndexes = {};
+const assignedCantonese: AssignedIndexes = {};
+const assignedShanghainese: AssignedIndexes = {};
 
 // Type Definitions
 type DatasetType = {
@@ -143,6 +143,29 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     return result;
   };
 
+  // Helper function to handle assignment logic
+  function handleAssignment(
+    fullData: any[],
+    username: string,
+    assignments: Record<string, (number | [number, number])[]>,
+    indexOffset: number,
+    setSentenceData: (data: any[]) => void
+  ) {
+    if (username in assignments) {
+      const assignedIndexes = assignments[username];
+      const expandedIndexes = expandAssignedIndexes(
+        assignedIndexes,
+        indexOffset
+      );
+      const slicedData = expandedIndexes
+        .filter((i) => i >= 0 && i < fullData.length)
+        .map((i) => fullData[i]);
+      setSentenceData(slicedData);
+    } else {
+      setSentenceData(fullData);
+    }
+  }
+
   const handleDatabaseFetch = async (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -155,52 +178,34 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       console.error("Dataset is undefined");
     } else if (language === "Mandarin") {
       const fullData = dataset.mandarin_dataset ?? [];
-
-      if (username in assignedMandarin) {
-        const assignedIndexes = assignedMandarin[username];
-        const expandedIndexes = expandAssignedIndexes(assignedIndexes, -1); // Adjust for 0-based index
-        const slicedData = expandedIndexes
-          .filter((i) => i >= 0 && i < fullData.length) // prevent out-of-bounds access
-          .map((i) => fullData[i]);
-        setSentenceData(slicedData);
-        setCurrentDatabase("annotation-tool-dataset");
-      } else {
-        // If no specific assignment, load the full dataset
-        setSentenceData(fullData);
-        setCurrentDatabase("annotation-tool-dataset");
-      }
+      handleAssignment(
+        fullData,
+        username,
+        assignedMandarin,
+        -1,
+        setSentenceData
+      );
+      setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
       const fullData = dataset.cantonese_dataset ?? [];
-
-      if (username in assignedCantonese) {
-        const assignedIndexes = assignedCantonese[username];
-        const expandedIndexes = expandAssignedIndexes(assignedIndexes, 0); // No offset
-        const slicedData = expandedIndexes
-          .filter((i) => i >= 0 && i < fullData.length) // prevent out-of-bounds access
-          .map((i) => fullData[i]);
-        setSentenceData(slicedData);
-        setCurrentDatabase("annotation-tool-cantonese");
-      } else {
-        // If no specific assignment, load the full dataset
-        setSentenceData(fullData);
-        setCurrentDatabase("annotation-tool-cantonese");
-      }
+      handleAssignment(
+        fullData,
+        username,
+        assignedCantonese,
+        0,
+        setSentenceData
+      );
+      setCurrentDatabase("annotation-tool-cantonese");
     } else if (language === "Shanghainese") {
       const fullData = dataset.shanghainese_dataset ?? [];
-
-      if (username in assignedShanghainese) {
-        const assignedIndexes = assignedShanghainese[username];
-        const expandedIndexes = expandAssignedIndexes(assignedIndexes, -1); // Adjust for 0-based index
-        const slicedData = expandedIndexes
-          .filter((i) => i >= 0 && i < fullData.length) // prevent out-of-bounds access
-          .map((i) => fullData[i]);
-        setSentenceData(slicedData);
-        setCurrentDatabase("annotation-tool-shanghainese");
-      } else {
-        // If no specific assignment, load the full dataset
-        setSentenceData(fullData);
-        setCurrentDatabase("annotation-tool-shanghainese");
-      }
+      handleAssignment(
+        fullData,
+        username,
+        assignedShanghainese,
+        -1,
+        setSentenceData
+      );
+      setCurrentDatabase("annotation-tool-shanghainese");
     }
   };
 
