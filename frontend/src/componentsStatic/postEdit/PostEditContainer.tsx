@@ -44,6 +44,42 @@ const useDebounce = (callback: Function, delay: number) => {
   return debouncedCallback;
 };
 
+// Originally inside component, extracted it out
+export const generateDiff = (original: string, modified: string, setModifiedText: (newText: string) => void, setDiffContent: (newDiffContent: React.ReactNode) => void) => {
+  const dmp = new diff_match_patch();
+  const diffs = dmp.diff_main(original, modified);
+  dmp.diff_cleanupSemantic(diffs);
+
+  // Send raw modified text to parent component
+  setModifiedText(modified);
+
+  // Convert diffs into React elements
+  const diffElements = diffs.map(([type, text], index) => {
+    if (type === DIFF_INSERT) {
+      return (
+        <span className="post-edit-additions" key={`diff-${index}`}>
+          {text}
+        </span>
+      );
+    } else if (type === DIFF_DELETE) {
+      return (
+        <span className="post-edit-deletions" key={`diff-${index}`}>
+          {text}
+        </span>
+      );
+    } else {
+      // For equal text, return as is
+      return text;
+    }
+  });
+
+  // Convert array of elements to a single React element
+  const diffContent = <>{diffElements}</>;
+
+  // Update state and pass the diffContent to parent component
+  setDiffContent(diffContent);
+};
+
 // **PostEditContainer Component**
 export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   machineTranslation,
@@ -221,7 +257,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     setAddedErrorSpans(updatedSpans);
     setHighlightedError(updatedSpans);
     setModifiedText(newText);
-    generateDiff(machineTranslation, newText);
+    generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);
   };
 
   const applyHighlight = () => {
@@ -417,41 +453,6 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       setCaretPosition(editableDivRef.current, caretOffsetRef.current);
     }
   }, [modifiedText]);
-
-  const generateDiff = (original: string, modified: string) => {
-    const dmp = new diff_match_patch();
-    const diffs = dmp.diff_main(original, modified);
-    dmp.diff_cleanupSemantic(diffs);
-
-    // Send raw modified text to parent component
-    setModifiedText(modified);
-
-    // Convert diffs into React elements
-    const diffElements = diffs.map(([type, text], index) => {
-      if (type === DIFF_INSERT) {
-        return (
-          <span className="post-edit-additions" key={`diff-${index}`}>
-            {text}
-          </span>
-        );
-      } else if (type === DIFF_DELETE) {
-        return (
-          <span className="post-edit-deletions" key={`diff-${index}`}>
-            {text}
-          </span>
-        );
-      } else {
-        // For equal text, return as is
-        return text;
-      }
-    });
-
-    // Convert array of elements to a single React element
-    const diffContent = <>{diffElements}</>;
-
-    // Update state and pass the diffContent to parent component
-    onDiffTextUpdate(diffContent);
-  };
 
   useEffect(() => {
     document.addEventListener("mouseup", handleNativeMouseUp);
