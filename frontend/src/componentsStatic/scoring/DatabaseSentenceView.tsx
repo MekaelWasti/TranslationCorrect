@@ -9,6 +9,7 @@ import { generateDiff } from "../postEdit/PostEditContainer"
 type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
+  cantonese_pivot_dataset: any[];
   shanghainese_dataset: any[];
 };
 
@@ -136,8 +137,13 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       setSentenceData(dataset.mandarin_dataset ?? []);
       setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
-      setSentenceData(dataset.cantonese_dataset ?? []);
-      setCurrentDatabase("annotation-tool-cantonese");
+      if (username == "ethanc" || username == "YORK USER" || username == "BEATRICE USER") {
+        setSentenceData(dataset.cantonese_pivot_dataset ?? []);
+        setCurrentDatabase("annotation-tool-cantonese-pivot");
+      } else {
+        setSentenceData(dataset.cantonese_dataset ?? []);
+        setCurrentDatabase("annotation-tool-cantonese");
+      }
     } else if (language === "Shanghainese") {
       setSentenceData(dataset.shanghainese_dataset ?? []);
       setCurrentDatabase("annotation-tool-shanghainese");

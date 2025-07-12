@@ -16,6 +16,7 @@ import logo from "../assets/logo.svg";
 type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
+  cantonese_pivot_dataset: any[];
   shanghainese_dataset: any[];
 };
 
