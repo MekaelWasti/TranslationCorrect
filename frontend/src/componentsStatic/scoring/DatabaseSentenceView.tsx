@@ -18,7 +18,8 @@ type DatabaseSentenceViewProps = {
   setDiffContent: React.Dispatch<React.SetStateAction<React.ReactNode>>;
   setModifedText: React.Dispatch<React.SetStateAction<string>>;
   username: string;
-  setUsername: React.Dispatch<React.SetStateAction<string>>;
+  annotator: string;
+  setAnnotator: React.Dispatch<React.SetStateAction<string>>;
   sentenceID: string;
   setSentenceID: React.Dispatch<React.SetStateAction<string>>;
   setCurrentDatabase: React.Dispatch<React.SetStateAction<string>>;
@@ -28,6 +29,8 @@ type DatabaseSentenceViewProps = {
   setSentenceData: React.Dispatch<any>;
   setDataset: React.Dispatch<React.SetStateAction<DatasetType | null>>;
   dataset: DatasetType | null;
+  qaMode: boolean;
+  setQAMode: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
@@ -36,7 +39,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setDiffContent,
   setModifedText,
   username,
-  setUsername,
+  annotator,
+  setAnnotator,
   sentenceID,
   setSentenceID,
   setCurrentDatabase,
@@ -46,6 +50,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setSentenceData,
   setDataset,
   dataset,
+  qaMode,
+  setQAMode
 }) => {
   const [activeLanguage, setActiveLanguage] = useState<string | null>(null);
   const [row_active, setRow_active] = useState<boolean>(false);
@@ -88,7 +94,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setAddedErrorSpans([]);
     setHighlightedError([]);
 
-    if (`${username}_annotations` in item.annotations) {
+    if (`${annotator}_annotations` in item.annotations) {
       handlePrevAnnotation(item);
     }
   };
@@ -96,7 +102,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   const handlePrevAnnotation = (item: any) => {
     // Fetching the previous annotation data
     console.log("user has done this annotation already, loading previously submitted annotation");
-    const prev_annotation = item.annotations[`${username}_annotations`];
+    const prev_annotation = item.annotations[`${annotator}_annotations`];
     console.log("previous annotation data:", prev_annotation);
 
     // Displays the corrected version of the sentence done by the annotators
@@ -163,6 +169,26 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         >
           Cantonese
         </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Shanghainese" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Shanghainese
+        </button>
+        <button
+        className={`language-dataset-button`}
+          onClick={() => {
+            setQAMode(prev => prev ? false : true);
+            // We have to reset the annotator state to the user, since 
+            // we don't want the user to send in annotations as another
+            // annotator.
+            setAnnotator(username);
+          }}
+        >
+          {qaMode ? 'QA Mode' : 'Annotation Mode'}
+        </button>
         {/* <button
           className={`language-dataset-button ${
             activeLanguage == "Hakka" ? "active" : ""
@@ -179,14 +205,6 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         >
           Hokkien
         </button> */}
-        <button
-          className={`language-dataset-button ${
-            activeLanguage == "Shanghainese" ? "active" : ""
-          }`}
-          onClick={handleDatabaseFetch}
-        >
-          Shanghainese
-        </button>
       </div>
 
       <div className="db-sentence-view">
@@ -244,7 +262,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                   <td className="status-cell">
                     {item.annotations &&
                     item.annotations.hasOwnProperty(
-                      `${username}_annotations`
+                      `${annotator}_annotations`
                     ) ? (
                       <img
                         className="annotation-checkmark"

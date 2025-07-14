@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import "../../index.css";
 
-type UserSelectorProps = {
+type AnnotatorSelectorProps = {
   username: string;
-  setUsername: React.Dispatch<React.SetStateAction<string>>;
+  annotator: string;
+  setAnnotator: React.Dispatch<React.SetStateAction<string>>;
   sentenceData: any;
   sentenceID: string;
   setDiffContent: React.Dispatch<React.SetStateAction<React.ReactNode>>;
@@ -19,8 +20,10 @@ type UserSelectorProps = {
 };
 
 // **ScoringContainer Component**
-export const UserSelectorDropdown: React.FC<UserSelectorProps> = ({
+export const AnnotatorSelectorDropdown: React.FC<AnnotatorSelectorProps> = ({
   username,
+  annotator,
+  setAnnotator,
   sentenceData,
   sentenceID,
   setDiffContent,
@@ -30,19 +33,17 @@ export const UserSelectorDropdown: React.FC<UserSelectorProps> = ({
   generateDiff
 }) => {
 
-  const [user, setUser] = useState(username);
-
   // **Functions**
-  const handleUserChange = (user: string) => {
+  const handleAnnotatorChange = (annotator: string) => {
     const item = sentenceData.find(sentence => sentence._id === sentenceID);
     console.log("item:", item);
-    setUser(user);
-    console.log("user:", user);
+    setAnnotator(annotator);
+    console.log("user:", annotator);
     console.log("username:", username);
 
     // Fetching the previous annotation data
-    console.log("user has done this annotation already, loading previously submitted annotation");
-    var prev_annotation = item.annotations[`${user}_annotations`];
+    console.log("annotator has done this annotation already, loading previously submitted annotation");
+    var prev_annotation = item.annotations[`${annotator}_annotations`];
     if (!prev_annotation) {
         console.log("no previous sentence, giving a blank annotation")
         prev_annotation = {
@@ -99,9 +100,9 @@ export const UserSelectorDropdown: React.FC<UserSelectorProps> = ({
         <select
           name="user-dropdown"
           id="user_dropdown"
-          value={user}
+          value={annotator}
           onChange={(e) =>
-            handleUserChange(e.target.value)
+            handleAnnotatorChange(e.target.value)
           }
         >
           <option value="loka9">loka9</option>
