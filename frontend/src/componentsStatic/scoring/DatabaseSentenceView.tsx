@@ -5,6 +5,42 @@ import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 import { generateDiff } from "../postEdit/PostEditContainer"
 
+/**
+ * 📝 How to assign sentences to annotators:
+ *
+ * - Get annotators USERNAME (case-sensitive) to assign them a list of sentences.
+ * - You can give a mix of:
+ *    → one sentence (just a number, like 12)
+ *    → or a range (in square brackets, like [5, 10])
+ *
+ * ✅ Examples:
+ *   kim: [5, [10, 15], [30, 35], 44] → means kim gets:
+ *     - sentence 5
+ *     - sentences 10 to 15 (inclusive)
+ *     - sentences 30 to 35 (inclusive)
+ *     - and sentence 44
+ *
+ * ✅ Example format:
+ *    const assignedMandarin = {
+ *        kim: [1, [5, 10], 20],
+ *        alice: [[15, 18], 25, 30],
+ *        bob: [[40, 45]],
+ *     };
+ *
+ * ⚠️ Indexing rules:
+ *   - Mandarin and Shanghainese: start at 1
+ *   - Cantonese: starts at 0
+ *   → Just write the number you see in the dataset.
+ *
+ * 🔒 No overlaps unless on purpose, as it will show up more than once.
+ */
+
+type AssignedIndexes = Record<string, (number | [number, number])[]>;
+
+const assignedMandarin: AssignedIndexes = {};
+const assignedCantonese: AssignedIndexes = {};
+const assignedShanghainese: AssignedIndexes = {};
+
 // Type Definitions
 type DatasetType = {
   mandarin_dataset: any[];
@@ -122,6 +158,48 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     generateDiff(item.mt, prev_annotation.corrected_sentence, setModifedText, setDiffContent);
   };
 
+  // Helper function to expand assigned indexes
+  const expandAssignedIndexes = (
+    assignments: (number | [number, number])[],
+    offset: number = 0
+  ): number[] => {
+    const result: number[] = [];
+    for (const item of assignments) {
+      if (typeof item === "number") {
+        result.push(item + offset);
+      } else {
+        const [start, end] = item;
+        for (let i = start; i <= end; i++) {
+          result.push(i + offset);
+        }
+      }
+    }
+    return result;
+  };
+
+  // Helper function to handle assignment logic
+  function handleAssignment(
+    fullData: any[],
+    username: string,
+    assignments: Record<string, (number | [number, number])[]>,
+    indexOffset: number,
+    setSentenceData: (data: any[]) => void
+  ) {
+    if (username in assignments) {
+      const assignedIndexes = assignments[username];
+      const expandedIndexes = expandAssignedIndexes(
+        assignedIndexes,
+        indexOffset
+      );
+      const slicedData = expandedIndexes
+        .filter((i) => i >= 0 && i < fullData.length)
+        .map((i) => fullData[i]);
+      setSentenceData(slicedData);
+    } else {
+      setSentenceData(fullData);
+    }
+  }
+
   const handleDatabaseFetch = async (
     e: React.MouseEvent<HTMLButtonElement>
   ) => {
@@ -133,13 +211,34 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     if (!dataset) {
       console.error("Dataset is undefined");
     } else if (language === "Mandarin") {
-      setSentenceData(dataset.mandarin_dataset ?? []);
+      const fullData = dataset.mandarin_dataset ?? [];
+      handleAssignment(
+        fullData,
+        username,
+        assignedMandarin,
+        -1,
+        setSentenceData
+      );
       setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
-      setSentenceData(dataset.cantonese_dataset ?? []);
+      const fullData = dataset.cantonese_dataset ?? [];
+      handleAssignment(
+        fullData,
+        username,
+        assignedCantonese,
+        0,
+        setSentenceData
+      );
       setCurrentDatabase("annotation-tool-cantonese");
     } else if (language === "Shanghainese") {
-      setSentenceData(dataset.shanghainese_dataset ?? []);
+      const fullData = dataset.shanghainese_dataset ?? [];
+      handleAssignment(
+        fullData,
+        username,
+        assignedShanghainese,
+        -1,
+        setSentenceData
+      );
       setCurrentDatabase("annotation-tool-shanghainese");
     }
   };
