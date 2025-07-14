@@ -403,33 +403,30 @@ li {
   height: 100%;
 }
 
-.error-tooltip-container {
-  display: none;
-  position: absolute;
-  z-index: 10;
-  /* display: flex; */
-  background-color: #222222;
-  padding: 1vh 1vw 1vh 0vw;
-  border-radius: 8px;
-  width: fit-content;
-  outline: #333333 solid 1px;
-}
-
-.error-tooltip:hover {
-  /* display: block; */
-}
-
+/* Error tooltip  when hoevering over span */
 .error-tooltip {
-  padding: 0.5vh 3vw 1vh 3vw;
+  position: absolute;       /* position will come from inline style={{ top, left }} */
+  display: block;           /* ensure it isn’t hidden */
+  z-index: 1001;            /* above other content */
+  background-color: #222222;
+  /* padding: 0.5vh 3vw 1vh 3vw; */
+  padding: 5px;
+  border-radius: 8px;
+  outline: #333333 solid 1px;
+  color: #ffffff;           /* make text visible */
+  width: fit-content;       /* shrink to fit content */
+  white-space: nowrap;      /* prevent accidental wrapping (optional) */
 }
 
+/* Optional: adjust headline and paragraphs inside */
 .error-tooltip > h3 {
-  display: inline;
+  font-size: 1.2rem;
+  color: var(--error-color, #ff0000); /* override with inline style for colorMappings */
 }
 
 .error-tooltip > p {
-  padding: 0vh 0vw 0vh 0vw;
-  margin: 0vh 0vw 0vh 0vw;
+  /* font-size: 1rem; */
+  color: #ddd;
 }
 
 /* Error Legend Section */
@@ -1536,4 +1533,35 @@ select:hover {
 ::selection {
   background-color: rgb(255, 255, 255);
   color: black;
+}
+
+.delete-span-button {
+  position: absolute;
+  background-color: #cf2020;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  min-width: 10px;
+  width: 24px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.35s ease-in-out;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transform: translateY(5px);
+}
+.delete-span-button.visible {
+  pointer-events: auto;
+  opacity: 1;
+  transform: translateY(0);
+}
+.delete-span-button:hover {
+  background-color: #ff3333;
 }
