@@ -46,6 +46,7 @@ type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
   shanghainese_dataset: any[];
+  cantonese_pivot_dataset: any[];
 };
 
 type DatabaseSentenceViewProps = {
@@ -221,7 +222,10 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       );
       setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
-      const fullData = dataset.cantonese_dataset ?? [];
+      // If user york or beatricengsw, then switch dataset
+      const un = username.trim().toLowerCase();
+      const isPivot = un === 'york' || un === 'beatricengsw';
+      const fullData = isPivot ? dataset.cantonese_pivot_dataset ?? [] : dataset.cantonese_dataset ?? [];
       handleAssignment(
         fullData,
         username,
@@ -229,7 +233,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         0,
         setSentenceData
       );
-      setCurrentDatabase("annotation-tool-cantonese");
+      setCurrentDatabase(isPivot ? "annotation-tool-cantonese-pivot" : "annotation-tool-cantonese");
     } else if (language === "Shanghainese") {
       const fullData = dataset.shanghainese_dataset ?? [];
       handleAssignment(

@@ -17,6 +17,7 @@ type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
   shanghainese_dataset: any[];
+  cantonese_pivot_dataset: any[];
 };
 
 const App: React.FC = () => {
