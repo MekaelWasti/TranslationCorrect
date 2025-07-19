@@ -278,7 +278,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>MT</th>
               <th>Reference</th>
               <th>Annotation Done</th>
-              <th>QA Done</th>
+              {qaMode && <th>QA Done</th>}
             </tr>
           </thead>
           <tbody>
@@ -309,7 +309,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
                   </td>
-                  <td className="status-cell">
+                  {qaMode && <td className="status-cell">
                     {item.annotations &&
                     item.annotations.hasOwnProperty(
                       `${username}_qa`
@@ -322,7 +322,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                     ) : (
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
-                  </td>
+                  </td>}
                 </tr>
               ))
             ) : (
