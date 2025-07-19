@@ -17,6 +17,7 @@ type AnnotatorSelectorProps = {
     setModifiedText: (newText: string) => void, 
     setDiffContent: (newDiffContent: React.ReactNode) => void
   ) => void;
+  activeLanguage: string;
 };
 
 // **ScoringContainer Component**
@@ -30,7 +31,8 @@ export const AnnotatorSelectorDropdown: React.FC<AnnotatorSelectorProps> = ({
   setModifedText,
   setAddedErrorSpans,
   setHighlightedError,
-  generateDiff
+  generateDiff,
+  activeLanguage,
 }) => {
 
   // **Functions**
@@ -96,21 +98,39 @@ export const AnnotatorSelectorDropdown: React.FC<AnnotatorSelectorProps> = ({
           <option value="Major">Major</option>
         </select>
       </div> */}
-      <div className="">
-        <select
-          name="user-dropdown"
-          id="user_dropdown"
-          value={annotator}
-          onChange={(e) =>
-            handleAnnotatorChange(e.target.value)
-          }
-        >
-          <option value="loka9">loka9</option>
-          <option value="Phantom65536">Phantom65536</option>
-          <option value="wingspecialist">wingspecialist</option>
-          <option value="ethanc">ethanc</option>
-        </select>
-      </div>
+      {activeLanguage === "Cantonese" && (
+        <div className="">
+          <select
+            name="user-dropdown"
+            id="user_dropdown"
+            value={annotator}
+            onChange={(e) =>
+              handleAnnotatorChange(e.target.value)
+            }
+          >
+            <option value="loka9">loka9</option>
+            <option value="Phantom65536">Phantom65536</option>
+            <option value="wingspecialist">wingspecialist</option>
+            <option value="ethanc">ethanc</option>
+          </select>
+        </div>
+      )}
+      {activeLanguage === "Mandarin" && (
+        <div className="">
+          <select
+            name="user-dropdown"
+            id="user_dropdown"
+            value={annotator}
+            onChange={(e) =>
+              handleAnnotatorChange(e.target.value)
+            }
+          >
+            <option value="RuntongLiang">RuntongLiang</option>
+            <option value="Hannah">Hannah</option>
+            <option value="qianshi2">qianshi2</option>
+          </select>
+        </div>
+      )}
     </div>
   );
 };

@@ -31,6 +31,8 @@ type DatabaseSentenceViewProps = {
   dataset: DatasetType | null;
   qaMode: boolean;
   setQAMode: React.Dispatch<React.SetStateAction<boolean>>;
+  activeLanguage: string;
+  setActiveLanguage: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
@@ -51,10 +53,15 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setDataset,
   dataset,
   qaMode,
-  setQAMode
+  setQAMode,
+  activeLanguage,
+  setActiveLanguage
 }) => {
-  const [activeLanguage, setActiveLanguage] = useState<string | null>(null);
   const [row_active, setRow_active] = useState<boolean>(false);
+
+  const mandarin_annotators = ["Hannah", "RuntongLiang", "qianshi2"];
+  const cantonese_annotators = ["loka9", "Phantom65536", 
+                                "wingspecialist", "ethanc"];
 
   // useEffect(() => {
   //   fetch("/mandarin_dataset.json")
@@ -148,7 +155,41 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       setSentenceData(dataset.shanghainese_dataset ?? []);
       setCurrentDatabase("annotation-tool-shanghainese");
     }
+    // We might need noFunnyBusiness here too
   };
+
+  const handleModeChange = () => {
+    console.log("mode toggle pressed")
+
+    setQAMode(prev => prev ? false : true);
+    // We have to reset the annotator state to the user, since 
+    // we don't want the user to send in annotations as another
+    // annotator.
+    // setAnnotator(username);
+    noFunnyBusiness();
+  }
+
+  const noFunnyBusiness = () => {
+    // IMPORTANT NOTE
+    // I'm not good at JS, but I think that qaMode saves the state
+    // from when the button was initially pressed, and does not change
+    // during the click function. So, we need to actually invert the if
+    // statement. 
+    if (!qaMode) {
+      console.log("we are now in qa mode")
+      console.log(activeLanguage);
+      console.log(username);
+      console.log("ethandb")
+      console.log(activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username))
+      if (activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username)) {
+        console.log("set to hannah");
+        setAnnotator("Hannah");
+      } else if (activeLanguage === "Cantonese" && ! cantonese_annotators.includes(username)) {
+        setAnnotator("loka9");
+      }
+      console.log(annotator);
+    }
+  }
 
   return (
     <div className="db-sentence-view-parent">
@@ -179,13 +220,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         </button>
         <button
         className={`language-dataset-button`}
-          onClick={() => {
-            setQAMode(prev => prev ? false : true);
-            // We have to reset the annotator state to the user, since 
-            // we don't want the user to send in annotations as another
-            // annotator.
-            setAnnotator(username);
-          }}
+          onClick={handleModeChange}
         >
           {qaMode ? 'QA Mode' : 'Annotation Mode'}
         </button>

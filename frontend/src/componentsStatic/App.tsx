@@ -39,10 +39,12 @@ const App: React.FC = () => {
     setSpanScores,
   } = useSpanEvalContext();
 
+  // Drill baby drill
   const [username, setUsername] = useState<string | null>("");
   const [annotator, setAnnotator] = useState<string | null>("");
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
+  const [activeLanguage, setActiveLanguage] = useState("Mandarin");
 
   const [qaMode, setQAMode] = useState(false);
 
@@ -306,6 +308,8 @@ const App: React.FC = () => {
               setDataset={setDataset}
               qaMode={qaMode}
               setQAMode={setQAMode}
+              activeLanguage={activeLanguage}
+              setActiveLanguage={setActiveLanguage}
             />
             <div className='annotator-selector'>
               {qaMode && (
@@ -320,6 +324,7 @@ const App: React.FC = () => {
                   setAddedErrorSpans={setAddedErrorSpans}
                   setHighlightedError={setErrorSpans}
                   generateDiff={generateDiff}
+                  activeLanguage={activeLanguage}
                 />
               )}
             </div>
