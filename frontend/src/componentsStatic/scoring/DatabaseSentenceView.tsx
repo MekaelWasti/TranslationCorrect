@@ -55,7 +55,8 @@ type DatabaseSentenceViewProps = {
   setDiffContent: React.Dispatch<React.SetStateAction<React.ReactNode>>;
   setModifedText: React.Dispatch<React.SetStateAction<string>>;
   username: string;
-  setUsername: React.Dispatch<React.SetStateAction<string>>;
+  annotator: string;
+  setAnnotator: React.Dispatch<React.SetStateAction<string>>;
   sentenceID: string;
   setSentenceID: React.Dispatch<React.SetStateAction<string>>;
   setCurrentDatabase: React.Dispatch<React.SetStateAction<string>>;
@@ -65,6 +66,10 @@ type DatabaseSentenceViewProps = {
   setSentenceData: React.Dispatch<any>;
   setDataset: React.Dispatch<React.SetStateAction<DatasetType | null>>;
   dataset: DatasetType | null;
+  qaMode: boolean;
+  setQAMode: React.Dispatch<React.SetStateAction<boolean>>;
+  activeLanguage: string;
+  setActiveLanguage: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
@@ -73,7 +78,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setDiffContent,
   setModifedText,
   username,
-  setUsername,
+  annotator,
+  setAnnotator,
   sentenceID,
   setSentenceID,
   setCurrentDatabase,
@@ -83,9 +89,16 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setSentenceData,
   setDataset,
   dataset,
+  qaMode,
+  setQAMode,
+  activeLanguage,
+  setActiveLanguage
 }) => {
-  const [activeLanguage, setActiveLanguage] = useState<string | null>(null);
   const [row_active, setRow_active] = useState<boolean>(false);
+
+  const mandarin_annotators = ["Hannah", "RuntongLiang", "qianshi2"];
+  const cantonese_annotators = ["loka9", "Phantom65536", 
+                                "wingspecialist", "ethanc"];
 
   // useEffect(() => {
   //   fetch("/mandarin_dataset.json")
@@ -125,7 +138,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setAddedErrorSpans([]);
     setHighlightedError([]);
 
-    if (`${username}_annotations` in item.annotations) {
+    if (`${annotator}_annotations` in item.annotations) {
       handlePrevAnnotation(item);
     }
   };
@@ -133,7 +146,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   const handlePrevAnnotation = (item: any) => {
     // Fetching the previous annotation data
     console.log("user has done this annotation already, loading previously submitted annotation");
-    const prev_annotation = item.annotations[`${username}_annotations`];
+    const prev_annotation = item.annotations[`${annotator}_annotations`];
     console.log("previous annotation data:", prev_annotation);
 
     // Displays the corrected version of the sentence done by the annotators
@@ -245,7 +258,41 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       );
       setCurrentDatabase("annotation-tool-shanghainese");
     }
+    // We might need noFunnyBusiness here too
   };
+
+  const handleModeChange = () => {
+    console.log("mode toggle pressed")
+
+    setQAMode(prev => prev ? false : true);
+    // We have to reset the annotator state to the user, since 
+    // we don't want the user to send in annotations as another
+    // annotator.
+    // setAnnotator(username);
+    noFunnyBusiness();
+  }
+
+  const noFunnyBusiness = () => {
+    // IMPORTANT NOTE
+    // I'm not good at JS, but I think that qaMode saves the state
+    // from when the button was initially pressed, and does not change
+    // during the click function. So, we need to actually invert the if
+    // statement. 
+    if (!qaMode) {
+      console.log("we are now in qa mode")
+      console.log(activeLanguage);
+      console.log(username);
+      console.log("ethandb")
+      console.log(activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username))
+      if (activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username)) {
+        console.log("set to hannah");
+        setAnnotator("Hannah");
+      } else if (activeLanguage === "Cantonese" && ! cantonese_annotators.includes(username)) {
+        setAnnotator("loka9");
+      }
+      console.log(annotator);
+    }
+  }
 
   return (
     <div className="db-sentence-view-parent">
@@ -266,6 +313,20 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         >
           Cantonese
         </button>
+        <button
+          className={`language-dataset-button ${
+            activeLanguage == "Shanghainese" ? "active" : ""
+          }`}
+          onClick={handleDatabaseFetch}
+        >
+          Shanghainese
+        </button>
+        <button
+        className={`language-dataset-button`}
+          onClick={handleModeChange}
+        >
+          {qaMode ? 'QA Mode' : 'Annotation Mode'}
+        </button>
         {/* <button
           className={`language-dataset-button ${
             activeLanguage == "Hakka" ? "active" : ""
@@ -282,14 +343,6 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         >
           Hokkien
         </button> */}
-        <button
-          className={`language-dataset-button ${
-            activeLanguage == "Shanghainese" ? "active" : ""
-          }`}
-          onClick={handleDatabaseFetch}
-        >
-          Shanghainese
-        </button>
       </div>
 
       <div className="db-sentence-view">
@@ -327,7 +380,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>Sentence</th>
               <th>MT</th>
               <th>Reference</th>
-              <th>Complete</th>
+              <th>Annotation Done</th>
+              {qaMode && <th>QA Done</th>}
             </tr>
           </thead>
           <tbody>
@@ -347,7 +401,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                   <td className="status-cell">
                     {item.annotations &&
                     item.annotations.hasOwnProperty(
-                      `${username}_annotations`
+                      `${annotator}_annotations`
                     ) ? (
                       <img
                         className="annotation-checkmark"
@@ -358,6 +412,20 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
                   </td>
+                  {qaMode && <td className="status-cell">
+                    {item.annotations &&
+                    item.annotations.hasOwnProperty(
+                      `${username}_qa`
+                    ) ? (
+                      <img
+                        className="annotation-checkmark"
+                        src={checkmark}
+                        alt=""
+                      />
+                    ) : (
+                      <img className="annotation-cross" src={cross} alt="" />
+                    )}
+                  </td>}
                 </tr>
               ))
             ) : (

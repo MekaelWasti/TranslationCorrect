@@ -16,12 +16,14 @@ type LoginFormProps = {
     >
   >;
   setDBUsername: React.Dispatch<React.SetStateAction<string>>;
+  setAnnotator: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export const LoginForm: React.FC<LoginFormProps> = ({
   setDataset,
   setSentenceData,
   setDBUsername,
+  setAnnotator,
 }) => {
   const [username, setUsername] = useState<string>("");
   const [password, setPassword] = useState<string>("");
@@ -38,6 +40,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       // setUsername(storedUsername);
       console.log("Found stored credentials, attempting auto-login");
       setUsername(storedUsername);
+      setAnnotator(storedUsername);
       setPassword(storedPassword);
 
       // Auto-login with stored credentials
@@ -161,7 +164,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             type="text"
             id="username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => {
+              setUsername(e.target.value);
+              setAnnotator(e.target.value);
+            }}
             required
           />
         </div>

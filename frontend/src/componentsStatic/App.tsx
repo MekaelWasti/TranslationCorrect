@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../index.css";
 import HighlightedText from "./postEdit/HighlightedText";
-import { PostEditContainer } from "./postEdit/PostEditContainer";
+import { generateDiff, PostEditContainer } from "./postEdit/PostEditContainer";
 import { ScoringContainer } from "./scoring/ScoringContainer";
 import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
 import { useSpanEvalContext } from "./SpanEvalProvider";
@@ -9,6 +9,7 @@ import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { AnnotatorSelectorDropdown } from "./scoring/AnnotatorSelector";
 
 import logo from "../assets/logo.svg";
 
@@ -39,9 +40,14 @@ const App: React.FC = () => {
     setSpanScores,
   } = useSpanEvalContext();
 
+  // Drill baby drill
   const [username, setUsername] = useState<string | null>("");
+  const [annotator, setAnnotator] = useState<string | null>("");
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
+  const [activeLanguage, setActiveLanguage] = useState("Mandarin");
+
+  const [qaMode, setQAMode] = useState(false);
 
   // Dataset
   const [dataset, setDataset] = useState<DatasetType | null>(null);
@@ -160,8 +166,13 @@ const App: React.FC = () => {
 
     console.log(packageHighlightedErrors);
 
-    const annotationKey = `${username}_annotations`;
+    let annotationKey = `${username}_annotations`;
 
+    if (qaMode) {
+      annotationKey = `${username}_qa`;
+      packageHighlightedErrors['annotator'] = annotator;
+    }
+    
     const requestBody = {
       dataset: currentDatabase,
       id: sentenceID,
@@ -287,7 +298,8 @@ const App: React.FC = () => {
               setAddedErrorSpans={setAddedErrorSpans}
               setHighlightedError={setErrorSpans}
               username={username}
-              setUsername={setUsername}
+              annotator={annotator}
+              setAnnotator={setAnnotator}
               sentenceID={sentenceID}
               setSentenceID={setSentenceID}
               setCurrentDatabase={setCurrentDatabase}
@@ -295,7 +307,28 @@ const App: React.FC = () => {
               setSentenceData={setSentenceData}
               dataset={dataset}
               setDataset={setDataset}
+              qaMode={qaMode}
+              setQAMode={setQAMode}
+              activeLanguage={activeLanguage}
+              setActiveLanguage={setActiveLanguage}
             />
+            <div className='annotator-selector'>
+              {qaMode && (
+                <AnnotatorSelectorDropdown
+                  username={username}
+                  annotator={annotator}
+                  setAnnotator={setAnnotator}
+                  sentenceData={sentenceData}
+                  sentenceID={sentenceID}
+                  setDiffContent={setDiffContent}
+                  setModifedText={setModifiedText}
+                  setAddedErrorSpans={setAddedErrorSpans}
+                  setHighlightedError={setErrorSpans}
+                  generateDiff={generateDiff}
+                  activeLanguage={activeLanguage}
+                />
+              )}
+            </div>
             <div className="go-to-last-annotated-button-container">
               <button
                 className="go-to-last-annotated-button"
@@ -364,6 +397,7 @@ const App: React.FC = () => {
               setDataset={setDataset}
               setSentenceData={setSentenceData}
               setDBUsername={setUsername}
+              setAnnotator={setAnnotator}
             ></LoginForm>
           </div>
         )}
