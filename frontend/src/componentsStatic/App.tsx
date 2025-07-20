@@ -220,7 +220,7 @@ const App: React.FC = () => {
           .slice(currentIndex + 1)
           .find(
             (item) =>
-              !item.annotations || !item.annotations[`${username}_annotations`]
+              !item.annotations || !item.annotations[`${annotator}_annotations`]
           );
 
         if (nextSentence) {
