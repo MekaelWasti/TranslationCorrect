@@ -12,7 +12,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import logo from "../assets/logo.svg";
-import downloadIcon from "../assets/download.svg";
+import downloadIcon from "../assets/Download.svg";
 
 // Type Definitions
 type DatasetType = {
