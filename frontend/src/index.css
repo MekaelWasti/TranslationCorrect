@@ -1380,6 +1380,9 @@ tbody {
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
+  align-items: center;
+  margin: 2vh 0 0 0;
+  gap: 2vh;
 }
 
 .go-to-last-annotated-button {
@@ -1387,7 +1390,7 @@ tbody {
   background-color: white;
   color: black;
   cursor: pointer;
-  margin-right: 0vw;
+  margin: 0 0 0 0;
 }
 
 /* Login Form */
@@ -1880,6 +1883,181 @@ span.highlight {
     width: 0%;
   }
   100% {
+    width: 100%;
+  }
+}
+
+/* Download Button */
+.dataset-download-button {
+  background-color: transparent;
+  border: none;
+  border-radius: 3px;
+}
+
+.dataset-download-button img {
+  width: 40px;
+  height: 40px;
+}
+
+.dataset-download-button:hover {
+  background-color: #454545;
+  border-radius: 3px;
+}
+
+/* Media Queries */
+
+/* Phone */
+
+@media (max-width: 600px) {
+  html,
+  body {
+    width: 100vw;
+    overflow-x: hidden;
+  }
+
+  button {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  input {
+    font-size: 16px;
+  }
+
+  #username,
+  #password {
+    width: 95%;
+    padding-right: 0;
+    /* padding-left: 0; */
+    /* border: none; */
+  }
+
+  form {
+    /* background-color: red; */
+  }
+
+  .divider {
+    border: none;
+    background-color: white;
+  }
+
+  .divider:after {
+    border: none;
+    background-color: white;
+    color: white;
+  }
+
+  html {
+    font-size: 0.6em;
+  }
+
+  .logo-nav-container {
+    width: 90vw;
+    background-color: transparent;
+  }
+
+  .logo-nav-container:after {
+    background: none;
+  }
+
+  .logo_1 {
+    width: 90%;
+  }
+
+  .annotate-container {
+    width: 90vw;
+    height: 100%;
+  }
+
+  .login-toggle-container h3 {
+    font-size: 1.4em;
+  }
+
+  .login-button {
+    margin: 0 0 3em;
+  }
+
+  .login-toggle-container .login-button {
+    margin: 0 0 0 1em;
+  }
+
+  .footer {
+    margin: 0;
+    width: 100%;
+  }
+
+  .footer .divider {
+    display: none;
+  }
+
+  /* Main Page */
+
+  table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  td {
+    /* font-size: clamp(2px, 1.5vw, 25px); */
+  }
+
+  .status-cell {
+    width: 10vw;
+  }
+
+  .db-sentence-view {
+    width: 90vw;
+    /* overflow-x: hidden; */
+  }
+
+  .db-sentence-view-language-buttons {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .db-sentence-view-language-buttons button {
+    /* font-size: 0.84em; */
+    flex: 1 1 auto;
+    margin: 0 0.3em 1.6em 0.3em;
+    padding: 1.04em;
+    /* min-width: 5em; */
+    /* max-width: 100%; */
+  }
+
+  .go-to-last-annotated-button-container {
+    margin: 0 0 0 0;
+  }
+
+  .go-to-last-annotated-button,
+  .insert-span-button,
+  #span_severities,
+  .clear-spans-button,
+  .accept-translation-section button {
+    font-size: 1.2em;
+    padding: 1.1em 1.5em 1.1em 1.5em;
+  }
+
+  #span_severities {
+    /* -webkit-appearance: none; */
+    -moz-appearance: none;
+    appearance: none;
+    color: white;
+  }
+
+  .error-suggestion-display {
+  }
+
+  .error-suggestion-container {
+    width: 90vw;
+  }
+
+  .reference-text-container {
+    height: 100%;
+  }
+
+  .divider {
+    margin: 1.1em 0 1.1em 0;
     width: 100%;
   }
 }

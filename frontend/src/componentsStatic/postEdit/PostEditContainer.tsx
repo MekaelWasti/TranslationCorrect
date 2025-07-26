@@ -539,13 +539,13 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           <h3>Post-Editing</h3>
         </div>
         <div className="post-edit-section-header-buttons">
-          <button
+          {/* <button
             className="start-annotation-button"
             onClick={startAnnotationTimer}
             disabled={timerActive}
           >
             {timerActive ? "Annotation Timer Running" : "Start Annotation"}
-          </button>
+          </button> */}
           <button className={`insert-span-button`} onClick={applyHighlight}>
             Insert Span
           </button>

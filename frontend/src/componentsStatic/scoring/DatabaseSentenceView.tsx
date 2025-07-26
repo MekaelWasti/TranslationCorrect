@@ -4,6 +4,8 @@ import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 import { HighlightedError } from "../../types";
+import downloadIcon from "../../assets/Download.svg";
+
 // Type Definitions
 type DatasetType = {
   mandarin_dataset: any[];
@@ -34,6 +36,7 @@ type DatabaseSentenceViewProps = {
   setSentenceData: React.Dispatch<any>;
   setDataset: React.Dispatch<React.SetStateAction<DatasetType | null>>;
   dataset: DatasetType | null;
+  setCurrentDatabaseIndex: React.Dispatch<React.SetStateAction<string>>;
   setOriginalHighlightedError: React.Dispatch<
     React.SetStateAction<HighlightedError[]>
   >;
@@ -54,6 +57,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setHighlightedError,
   sentenceData,
   setSentenceData,
+  setCurrentDatabaseIndex,
   setDataset,
   dataset,
   setOriginalHighlightedError,
@@ -172,36 +176,45 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     } else if (language === "Mandarin") {
       setSentenceData(dataset.mandarin_dataset ?? []);
       setCurrentDatabase("annotation-tool-dataset");
+      setCurrentDatabaseIndex("mandarin_dataset");
     } else if (language === "Cantonese") {
       setSentenceData(dataset.cantonese_dataset ?? []);
       setCurrentDatabase("annotation-tool-cantonese");
+      setCurrentDatabaseIndex("cantonese_dataset");
     } else if (language === "Japanese") {
       setSentenceData(dataset.japanese_dataset ?? []);
       setCurrentDatabase("annotation-tool-japanese");
+      setCurrentDatabaseIndex("japanese_dataset");
     } else if (language === "Mandarin-v2") {
       setSentenceData(dataset.mandarin_v2_dataset ?? []);
       setCurrentDatabase("annotation-tool-mandarin-v2");
+      setCurrentDatabaseIndex("mandarin_v2_dataset");
     } else if (language === "Bengali") {
       setSentenceData(dataset.bengali_dataset ?? []);
       setCurrentDatabase("annotation-tool-bengali");
+      setCurrentDatabaseIndex("bengali_dataset");
     } else if (language === "Cantonese-v2") {
       setSentenceData(dataset.cantonese_v2_dataset ?? []);
       setCurrentDatabase("annotation-tool-cantonese-v2");
+      setCurrentDatabaseIndex("cantonese_v2_dataset");
     } else if (language === "French") {
       setSentenceData(dataset.french_dataset ?? []);
       setCurrentDatabase("annotation-tool-french");
+      setCurrentDatabaseIndex("french_dataset");
     } else if (language === "Tamil") {
       setSentenceData(dataset.tamil_dataset ?? []);
       setCurrentDatabase("annotation-tool-tamil");
+      setCurrentDatabaseIndex("tamil_dataset");
     } else if (language === "Shanghainese") {
       setSentenceData(dataset.shanghainese_dataset ?? []);
       setCurrentDatabase("annotation-tool-shanghainese");
+      setCurrentDatabaseIndex("shanghainese_dataset");
     }
   };
 
   return (
     <div className="db-sentence-view-parent">
-      <div>
+      <div className="db-sentence-view-language-buttons">
         {/* <button
           className={`language-dataset-button ${
             activeLanguage == "Mandarin" ? "active" : ""
@@ -244,7 +257,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         </button>
         <button
           className={`language-dataset-button ${
-            activeLanguage == "Mandarin" ? "active" : ""
+            activeLanguage == "Mandarin-v2" ? "active" : ""
           }`}
           onClick={handleDatabaseFetch}
         >

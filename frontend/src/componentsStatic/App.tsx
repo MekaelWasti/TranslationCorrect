@@ -12,6 +12,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import logo from "../assets/logo.svg";
+import downloadIcon from "../assets/download.svg";
 
 // Type Definitions
 type DatasetType = {
@@ -51,6 +52,9 @@ const App: React.FC = () => {
   const [username, setUsername] = useState<string | null>("");
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
+  const [currentDatabaseIndex, setCurrentDatabaseIndex] = useState<
+    string | null
+  >("");
 
   // Dataset
   const [dataset, setDataset] = useState<DatasetType | null>(null);
@@ -158,6 +162,62 @@ const App: React.FC = () => {
       // Show info toast if no more unannotated sentences
       toast.info("No more unannotated sentences found");
     }
+  };
+
+  const handleDatasetDownloadClick = (
+    e: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    if (!dataset) {
+      console.error("No dataset available to download");
+      return;
+    }
+
+    const filteredDataset = structuredClone(dataset);
+    // Filter dataset to only include current user's annotations
+
+    for (const key in filteredDataset[currentDatabaseIndex]) {
+      if (
+        `${username}_annotations` in
+        dataset[currentDatabaseIndex][key].annotations
+      ) {
+        filteredDataset[currentDatabaseIndex][key].annotations =
+          dataset[currentDatabaseIndex][key].annotations[
+            `${username}_annotations`
+          ];
+      } else {
+        filteredDataset[currentDatabaseIndex][key].annotations = [];
+      }
+    }
+
+    // console.log(dataset[currentDatabaseIndex]);
+    // console.log(filteredDataset[currentDatabaseIndex]);
+
+    // Convert the dataset to a JSON string
+    const dbObjectIndexConstruction = `filteredDataset.${currentDatabaseIndex}`;
+    const jsonString = JSON.stringify(eval(dbObjectIndexConstruction), null, 2);
+
+    // Create a Blob from the JSON string
+    const blob = new Blob([jsonString], { type: "application/json" });
+
+    // Create a URL for the Blob
+    const url = URL.createObjectURL(blob);
+
+    // Create a temporary anchor element
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${dbObjectIndexConstruction}.json`;
+
+    // Append the anchor to the body
+    document.body.appendChild(a);
+
+    // Programmatically click the anchor to trigger the download
+    a.click();
+
+    // Clean up by removing the anchor and revoking the Blob URL
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    console.log("Dataset downloaded");
   };
 
   const handleSubmitAnnotation = () => {
@@ -380,6 +440,7 @@ const App: React.FC = () => {
               setSentenceData={setSentenceData}
               dataset={dataset}
               setDataset={setDataset}
+              setCurrentDatabaseIndex={setCurrentDatabaseIndex}
               // originalHighlightedError={originalHighlightedError}
               setOriginalHighlightedError={setOriginalSpans}
             />
@@ -389,6 +450,12 @@ const App: React.FC = () => {
                 onClick={handleGoToLastAnnotation}
               >
                 Go To Last Annotated
+              </button>
+              <button
+                className="dataset-download-button"
+                onClick={handleDatasetDownloadClick}
+              >
+                <img src={downloadIcon} alt="Download Dataset" />
               </button>
             </div>
             <div className="divider"></div>
