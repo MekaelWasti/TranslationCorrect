@@ -9,6 +9,7 @@ export interface HighlightedError {
   error_type: string;
   error_severity: string;
   error_confidence?: string;
+  id?: string;
 }
 
 // export const colorMappings: { [key: string]: string } = {

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 type LoginFormProps = {
   setDataset: React.Dispatch<any>;
   setSentenceData: React.Dispatch<
@@ -61,7 +63,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     if (!isNewUser) {
       try {
         const response = await fetch(
-          "https://translation-correct-annotation-task-dutd.vercel.app/api/login",
+          // "https://translation-correct-annotation-task-dutd.vercel.app/api/login",
+          `${API_BASE}/api/login`,
           {
             method: "POST",
             headers: {
@@ -111,7 +114,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     } else {
       try {
         const response = await fetch(
-          "https://translation-correct-annotation-task-dutd.vercel.app/api/register",
+          // "https://translation-correct-annotation-task-dutd.vercel.app/api/register",
+          `${API_BASE}/api/register`,
           {
             method: "POST",
             headers: {
@@ -121,7 +125,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           }
         );
 
-        const data = await response.json();
+        // const data = await response.json();
+        // Safer version below
+        const isJson = response.headers
+          .get("content-type")
+          ?.includes("application/json");
+        const data = isJson
+          ? await response.json()
+          : { error: await response.text() };
+
         if (response.ok) {
           // alert("Registration successful! You can now log in.");
           toast.success("Registration successful! You can now log in.");

@@ -4,12 +4,11 @@ import HighlightedText from "./postEdit/HighlightedText";
 import { PostEditContainer } from "./postEdit/PostEditContainer";
 import { ScoringContainer } from "./scoring/ScoringContainer";
 import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
-import { useSpanEvalContext } from "./SpanEvalProvider";
+import { useSpanEvalContext, SpanEvalProvider } from "./SpanEvalProvider";
 import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import logo from "../assets/logo.svg";
 
 // Type Definitions
@@ -17,9 +16,39 @@ type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
   shanghainese_dataset: any[];
+  cantonese_pivot_dataset: any[];
 };
 
+const API_BASE = import.meta.env.VITE_API_BASE;
+
 const App: React.FC = () => {
+
+  const [username, setUsername] = useState<string | null>("");
+  const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
+  const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
+  
+  return (
+    <SpanEvalProvider onQAAction={() => {}}>
+      <AppInner
+        username={username}
+        setUsername={setUsername}
+        sentenceID={sentenceID}
+        setSentenceID={setSentenceID}
+        currentDatabase={currentDatabase}
+        setCurrentDatabase={setCurrentDatabase}
+      />
+    </SpanEvalProvider>
+  );
+};
+
+const AppInner: React.FC<{
+  username: string;
+  setUsername: (u: string) => void;
+  sentenceID: string;
+  setSentenceID: (id: string) => void;
+  currentDatabase: string;
+  setCurrentDatabase: (db: string) => void;
+}> = ({ username, setUsername, sentenceID, setSentenceID, currentDatabase, setCurrentDatabase }) => {
   const {
     origText: referenceTranslation,
     setOrigText,
@@ -28,45 +57,23 @@ const App: React.FC = () => {
     originalSpans: originalHighlightedError,
     errorSpans: highlightedError,
     setErrorSpans,
-    curEntryIdx,
-    setEntryIdx,
     diffContent,
     setDiffContent,
     spanSeverity,
     setSpanSeverity,
     spanScores,
     setSpanScores,
+    qaMode,
+    setQAMode,
+    qaQueue,
+    flushQaQueue,
   } = useSpanEvalContext();
 
-  const [username, setUsername] = useState<string | null>("");
-  const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
-  const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
-
-  // Dataset
   const [dataset, setDataset] = useState<DatasetType | null>(null);
-
-  const [sentenceData, setSentenceData] = useState<
-    {
-      _id: string;
-      id: number;
-      src: string;
-      mt: string;
-      ref: string;
-      annotations: Object;
-    }[]
-  >([]);
-
-  const [modifiedText, setModifiedText] =
-    React.useState<string>(machineTranslation);
-  const [addedErrorSpans, setAddedErrorSpans] = React.useState<
-    HighlightedError[]
-  >([]);
-  const [overallScore, setOverallScore] = React.useState<number>(50);
-
-  // console.log(curEntryIdx);
-
-  // const [diffContent, setDiffContent] =
-  //   useState<React.ReactNode>(machineTranslation);
+  const [sentenceData, setSentenceData] = useState<any[]>([]);
+  const [modifiedText, setModifiedText] = useState<string>(machineTranslation);
+  const [overallScore, setOverallScore] = useState<number>(50);
+  const [addedErrorSpans, setAddedErrorSpans] = useState<HighlightedError[]>([]);
 
   const handleDiffTextUpdate = (parsedDiff: React.ReactNode) => {
     setDiffContent(parsedDiff);
@@ -164,7 +171,9 @@ const App: React.FC = () => {
     const requestBody = {
       dataset: currentDatabase,
       id: sentenceID,
-      [annotationKey]: packageHighlightedErrors, // Dynamic key placement
+      annotationKey,  
+      qaMode,
+      ...packageHighlightedErrors    // contains annotatedSpans, overall_translation_score, corrected_sentence
     };
 
     console.log(requestBody);
@@ -174,7 +183,8 @@ const App: React.FC = () => {
     const toastId = toast.loading("Submitting annotation...");
 
     fetch(
-      "https://translation-correct-annotation-task-dutd.vercel.app/api/submit_annotation",
+      // "https://translation-correct-annotation-task-dutd.vercel.app/api/submit_annotation",
+      `${API_BASE}/api/submit_annotation`,
       {
         method: "POST",
         headers: {
@@ -199,6 +209,10 @@ const App: React.FC = () => {
           autoClose: 3000,
           closeButton: true,
         });
+
+        if (qaMode && qaQueue.length > 0) {
+          flushQaQueue();
+        }
 
         // After successful submission, find the next unannotated sentence
         const currentIndex = sentenceData.findIndex(
@@ -349,11 +363,16 @@ const App: React.FC = () => {
               diffContent={diffContent}
               setDiffContent={setDiffContent}
             />
+            <div className="language-dataset-button">
+              <button onClick={() => setQAMode(!qaMode)}>
+                {qaMode ? "In QA Mode" : "In Annotation Mode"}
+              </button>
+            </div>
             {/* Translation Submission Section */}
             <div className="accept-translation-section">
               {/* <button onClick={() => setEntryIdx(curEntryIdx + 1)}> */}
               <button onClick={() => handleSubmitAnnotation()}>
-                Submit Annotation
+                {qaMode ? "Submit QA Review" : "Submit Annotation"}
               </button>
             </div>
           </div>
