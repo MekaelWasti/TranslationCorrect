@@ -552,9 +552,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           {/* <button className="custom-correction-button">Custom Correction</button> */}
           <SpanScoreDropdown />
           <button
-            className={`clear-spans-button ${
-              clearButtonClicked ? "clear-spans-button-confirm" : ""
-            }`}
+            className={`clear-spans-button ${clearButtonClicked ? "clear-spans-button-confirm" : ""
+              }`}
             onClick={handleClearSpansButton}
           >
             {clearButtonClicked ? "Clear?" : "Clear"}
@@ -575,7 +574,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           suppressContentEditableWarning={true}
           onMouseUp={handleReactMouseUp}
           onFocus={handleFirstInteraction}
-          onClick={handleAreaClick}
+        // onClick={handleAreaClick} //Removed Annotation Timer
         >
           <HighlightedText
             text={modifiedText}
@@ -586,9 +585,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           />
         </div>
         <button
-          className={`insert-span-popup-button ${
-            showInsertButton ? "visible" : ""
-          }`}
+          className={`insert-span-popup-button ${showInsertButton ? "visible" : ""
+            }`}
           style={{
             position: "absolute",
             top: buttonPosition.top + 20,

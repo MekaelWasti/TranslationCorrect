@@ -182,15 +182,25 @@ const App: React.FC = () => {
       ) {
         filteredDataset[currentDatabaseIndex][key].annotations =
           dataset[currentDatabaseIndex][key].annotations[
-            `${username}_annotations`
+          `${username}_annotations`
           ];
       } else {
         filteredDataset[currentDatabaseIndex][key].annotations = [];
       }
     }
 
+    for (const mtEntry in filteredDataset[currentDatabaseIndex]) {
+      for (const key in filteredDataset[currentDatabaseIndex][mtEntry]) {
+        if (key === "annotations") {
+          if ("annotation_time_seconds" in filteredDataset[currentDatabaseIndex][mtEntry][key]) {
+            delete filteredDataset[currentDatabaseIndex][mtEntry][key].annotation_time_seconds;
+          }
+        }
+      }
+    }
+
     // console.log(dataset[currentDatabaseIndex]);
-    // console.log(filteredDataset[currentDatabaseIndex]);
+    console.log(filteredDataset[currentDatabaseIndex]);
 
     // Convert the dataset to a JSON string
     const dbObjectIndexConstruction = `filteredDataset.${currentDatabaseIndex}`;
@@ -387,9 +397,9 @@ const App: React.FC = () => {
           return prevData.map((row) =>
             row._id === sentenceID
               ? {
-                  ...row,
-                  annotations: { [annotationKey]: packageHighlightedErrors },
-                }
+                ...row,
+                annotations: { [annotationKey]: packageHighlightedErrors },
+              }
               : row
           );
         });
