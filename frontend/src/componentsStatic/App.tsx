@@ -80,7 +80,8 @@ const App: React.FC = () => {
   };
 
   const handleGoToLastAnnotation = () => {
-    const annotationKey = `${username}_annotations`;
+    // Use different annotation keys based on mode
+    const annotationKey = qaMode ? `${username}_qa` : `${username}_annotations`;
     const lastCompletedIndex = sentenceData
       .map((item, index) => ({
         index,
@@ -115,11 +116,13 @@ const App: React.FC = () => {
         rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
-      // Show success toast
-      toast.success("Navigated to the next unannotated sentence");
+      // Show success toast 
+      const modeText = qaMode ? "QA-ed" : "annotated";
+      toast.success(`Navigated to the next un${modeText} sentence`);
     } else {
       // Show info toast if no more unannotated sentences
-      toast.info("No more unannotated sentences found");
+      const modeText = qaMode ? "QA-ed" : "annotated";
+      toast.info(`No more un${modeText} sentences found`);
     }
   };
 
@@ -220,7 +223,7 @@ const App: React.FC = () => {
           .slice(currentIndex + 1)
           .find(
             (item) =>
-              !item.annotations || !item.annotations[`${annotator}_annotations`]
+              !item.annotations || !item.annotations[annotationKey]
           );
 
         if (nextSentence) {
@@ -334,7 +337,7 @@ const App: React.FC = () => {
                 className="go-to-last-annotated-button"
                 onClick={handleGoToLastAnnotation}
               >
-                Go To Last Annotated
+                {qaMode ? "Go To Last QA-ed" : "Go To Last Annotated"}
               </button>
             </div>
             <div className="divider"></div>
@@ -387,7 +390,7 @@ const App: React.FC = () => {
             <div className="accept-translation-section">
               {/* <button onClick={() => setEntryIdx(curEntryIdx + 1)}> */}
               <button onClick={() => handleSubmitAnnotation()}>
-                Submit Annotation
+                {qaMode ? "Submit QA" : "Submit Annotation"}
               </button>
             </div>
           </div>
