@@ -100,6 +100,11 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   const cantonese_annotators = ["loka9", "Phantom65536", 
                                 "wingspecialist", "ethanc"];
 
+  const bug_sentence = 'On Monday, scientists from the Stanford University School of Medicine ' + 
+                       'announced the invention of a new diagnostic tool that can sort cells by ' + 
+                       'type: a tiny printable chip that can be manufactured using standard '+
+                       'inkjet printers for possibly about one U.S. cent each.'
+
   // useEffect(() => {
   //   fetch("/mandarin_dataset.json")
   //     .then((response) => {
@@ -149,9 +154,42 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     const prev_annotation = item.annotations[`${annotator}_annotations`];
     console.log("previous annotation data:", prev_annotation);
 
+    // There was a bug earlier on with the code and I couldn't edit the database
+    // so we're doing this instead
+    let corrected_sentence = prev_annotation.corrected_sentence;
+
+    if (corrected_sentence === bug_sentence) {
+      console.log("We got the \'On Monday\' bug");
+      corrected_sentence = item.mt;
+      console.log("Corrected sentence is now the following:");
+      console.log(corrected_sentence);
+      for (let span of prev_annotation.annotatedSpans) {
+        console.log("Checking if span is an omission span:");
+        console.log(span);
+        if (
+          span.error_type === "Omission" &&
+          typeof span.start_index === "number" &&
+          typeof span.error_text_segment === "string"
+        ) {
+          console.log("Appending omission to corrected sentence");
+          console.log(corrected_sentence.slice(0, span.start_index));
+          console.log(span.error_text_segment);
+          console.log(corrected_sentence.slice(span.start_index));
+          corrected_sentence =
+            corrected_sentence.slice(0, span.start_index) +
+            span.error_text_segment +
+            corrected_sentence.slice(span.start_index);
+          console.log("New corrected sentence:");
+          console.log(corrected_sentence);
+        }
+      }
+    }
+
+    console.log("corrected sentence to be set:");
+    console.log(corrected_sentence);
     // Displays the corrected version of the sentence done by the annotators
-    setDiffContent(prev_annotation.corrected_sentence);
-    setModifedText(prev_annotation.corrected_sentence);
+    setDiffContent(corrected_sentence);
+    setModifedText(corrected_sentence);
 
     // setAddedErrorSpans and setHighlightedError use different namings of attributes
     // so we accomodate for that here
@@ -169,7 +207,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setHighlightedError(modified_spans);
 
     // This gives us the diff in the machine translation portion
-    generateDiff(item.mt, prev_annotation.corrected_sentence, setModifedText, setDiffContent);
+    generateDiff(item.mt, corrected_sentence, setModifedText, setDiffContent);
   };
 
   // Helper function to expand assigned indexes
