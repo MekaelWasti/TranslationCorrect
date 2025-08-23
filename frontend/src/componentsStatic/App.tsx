@@ -4,7 +4,7 @@ import HighlightedText from "./postEdit/HighlightedText";
 import { PostEditContainer } from "./postEdit/PostEditContainer";
 import { ScoringContainer } from "./scoring/ScoringContainer";
 import { DatabaseSentenceView } from "./scoring/DatabaseSentenceView";
-import { useSpanEvalContext, SpanEvalProvider } from "./SpanEvalProvider";
+import { useSpanEvalContext, SpanEvalProvider, QAEntry } from "./SpanEvalProvider";
 import { HighlightedError } from "../types";
 import { LoginForm } from "./scoring/LoginForm";
 import { ToastContainer, toast } from "react-toastify";
@@ -27,8 +27,44 @@ const App: React.FC = () => {
   const [sentenceID, setSentenceID] = useState<string | null>("undefined_id");
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
   
+  const handleQAAction = async (qaEntry: QAEntry) => {
+    console.log("Processing QA Action:", qaEntry);
+    
+    // Submit QA action to backend
+    const annotationKey = `${username}_annotations`;
+    
+    const requestBody = {
+      dataset: currentDatabase,
+      id: sentenceID,
+      annotationKey,
+      action: qaEntry.action,
+      span: qaEntry.span,
+      originalSpan: qaEntry.originalSpan,
+      newSpan: qaEntry.newSpan,
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/api/submit_annotation`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("QA Action submitted successfully:", data);
+    } catch (error) {
+      console.error("Error submitting QA action:", error);
+    }
+  };
+
   return (
-    <SpanEvalProvider onQAAction={() => {}}>
+    <SpanEvalProvider onQAAction={handleQAAction}>
       <AppInner
         username={username}
         setUsername={setUsername}
@@ -124,17 +160,31 @@ const AppInner: React.FC<{
   };
 
   const handleSubmitAnnotation = () => {
-    // Create the annotation object
+    console.log(`Submit called - QA Mode: ${qaMode}, QA Queue length: ${qaQueue.length}`);
+    
+    // Handle QA mode differently
+    if (qaMode) {
+      // In QA mode, only flush QA actions (which will submit them individually)
+      if (qaQueue.length > 0) {
+        const toastId = toast.loading("Submitting QA actions...");
+        
+        // Flush QA queue - this will call handleQAAction for each QA entry
+        flushQaQueue();
+        
+        toast.update(toastId, {
+          render: "QA actions submitted successfully!",
+          type: "success",
+          isLoading: false,
+          autoClose: 3000,
+          closeButton: true,
+        });
+      } else {
+        toast.info("No QA actions to submit");
+      }
+      return;
+    }
 
-    // // Scroll to the database viewer
-    // const dbViewerElement = document.querySelector(".db-sentence-view");
-    // if (dbViewerElement) {
-    //   dbViewerElement.scrollIntoView({
-    //     behavior: "smooth",
-    //     block: "start",
-    //   });
-    // }
-
+    // Regular annotation mode - create the annotation object
     const selectElement = document.querySelector(".span-score-section select");
     if (selectElement) {
       (selectElement as HTMLElement).style.backgroundColor = "#222222";
@@ -172,7 +222,6 @@ const AppInner: React.FC<{
       dataset: currentDatabase,
       id: sentenceID,
       annotationKey,  
-      qaMode,
       ...packageHighlightedErrors    // contains annotatedSpans, overall_translation_score, corrected_sentence
     };
 
@@ -210,9 +259,7 @@ const AppInner: React.FC<{
           closeButton: true,
         });
 
-        if (qaMode && qaQueue.length > 0) {
-          flushQaQueue();
-        }
+
 
         // After successful submission, find the next unannotated sentence
         const currentIndex = sentenceData.findIndex(
@@ -364,7 +411,11 @@ const AppInner: React.FC<{
               setDiffContent={setDiffContent}
             />
             <div className="language-dataset-button">
-              <button onClick={() => setQAMode(!qaMode)}>
+              <button onClick={() => {
+                const newQAMode = !qaMode;
+                setQAMode(newQAMode);
+                console.log(`QA Mode ${newQAMode ? 'enabled' : 'disabled'}`);
+              }}>
                 {qaMode ? "In QA Mode" : "In Annotation Mode"}
               </button>
             </div>

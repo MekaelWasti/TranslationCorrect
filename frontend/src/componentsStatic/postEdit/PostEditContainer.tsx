@@ -87,7 +87,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   setDiffContent,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
-  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans } =
+  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans, updateSpansPositions } =
     useSpanEvalContext();
 
   const caretOffsetRef = useRef<number>(0);
@@ -242,8 +242,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         end_index_translation: new_e,
       };
     });
-    clearErrorSpans();
-    // assume context setErrorSpans(updatedSpans)
+    // Update spans with new positions
+    updateSpansPositions(updatedSpans);
     // reposition caret and update diff
     setModifiedText(newText);
     generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);

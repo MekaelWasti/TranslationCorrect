@@ -45,6 +45,7 @@ type SpanEvalContextType = {
   ) => void;
   deleteErrorSpan: (idx: number) => void;
   clearErrorSpans: () => void;
+  updateSpansPositions: (updatedSpans: SpanWithID[]) => void;
   selectedSpanIdx: number | undefined;
   setSelectedSpanIdx: Dispatch<SetStateAction<number | undefined>>;
   diffContent: React.ReactNode;
@@ -265,7 +266,43 @@ export const SpanEvalProvider = ({
   };
 
   const clearErrorSpans = () => {
+    if (qaMode && errorSpans.length > 0) {
+      // Enqueue delete actions for all spans being cleared
+      errorSpans.forEach((span) => {
+        enqueueQA({
+          action: "delete",
+          spanId: span.id,
+          originalSpan: span,
+          timestamp: new Date(),
+        });
+      });
+    }
     setErrorSpans([]);
+  };
+
+  // Update spans with position adjustments (for text editing)
+  const updateSpansPositions = (updatedSpans: SpanWithID[]) => {
+    if (qaMode) {
+      // Compare old and new spans to detect position changes
+      const oldSpansMap = new Map(errorSpans.map(span => [span.id, span]));
+      
+      updatedSpans.forEach((newSpan) => {
+        const oldSpan = oldSpansMap.get(newSpan.id);
+        if (oldSpan && (
+          oldSpan.start_index_translation !== newSpan.start_index_translation ||
+          oldSpan.end_index_translation !== newSpan.end_index_translation
+        )) {
+          enqueueQA({
+            action: "modify",
+            spanId: newSpan.id,
+            originalSpan: oldSpan,
+            newSpan: newSpan,
+            timestamp: new Date(),
+          });
+        }
+      });
+    }
+    setErrorSpans(updatedSpans);
   };
 
   // Selected span & scores
@@ -293,6 +330,7 @@ export const SpanEvalProvider = ({
     addNewErrorSpan,
     deleteErrorSpan,
     clearErrorSpans,
+    updateSpansPositions,
     selectedSpanIdx,
     setSelectedSpanIdx,
     diffContent,
