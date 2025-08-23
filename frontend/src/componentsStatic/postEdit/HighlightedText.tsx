@@ -269,9 +269,6 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     setTimeout(() => {
       setSpanDropdown(false);
       setDropdownAnimation("");
-      if (highlightInserted && setHighlightInserted) {
-        setHighlightInserted(false);
-      }
     }, 250);
     // Update the select element's background color on error type selection
     const selectElement = document.querySelector(".span-score-section select");
@@ -414,10 +411,10 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
 
   const { elements } = getHighlightedText(React.Children.toArray(text), ranges);
 
-  // Handle auto‐opening dropdown if a new highlight was just inserted
+  // Handle auto‐opening dropdown when user clicks the add button
   useEffect(() => {
     if (highlightInserted && highlights.length > 0 && !spanDropdown) {
-      // Get the last inserted highlight (assuming it's the most recently added one)
+      // Get the last inserted highlight 
       const lastHighlight = highlights[highlights.length - 1];
       const lastHighlightIdx = highlights.length - 1;
 
@@ -429,8 +426,6 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
       setSelectedSpanIdx(lastHighlightIdx);
 
       // Calculate position for the dropdown
-      // We need to find the DOM element for the highlight
-      // Use a small timeout to ensure the DOM has been updated
       setTimeout(() => {
         const highlightElems = document.querySelectorAll(".highlight");
         let targetElem: Element | null = null;
@@ -445,9 +440,8 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
             break;
           }
         }
-        if (!targetElem && highlightElems.length > 0) {
-          targetElem = highlightElems[highlightElems.length - 1];
-        }
+        // Only proceed if we found the correct target element
+        // Don't fall back to the last element as it might be a different span
         if (targetElem) {
           const rect = (targetElem as HTMLElement).getBoundingClientRect();
           const centerX = rect.left + rect.width / 2;
@@ -465,9 +459,11 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
             setDropdownAnimation("fade-in");
           });
         }
-      }, 50);
-    }
-  }, [highlightInserted, highlights]);
+              }, 50);
+      }
+    }, [highlightInserted]); 
+
+
 
   return (
     <div>
