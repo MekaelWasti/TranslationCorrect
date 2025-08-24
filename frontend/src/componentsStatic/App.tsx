@@ -98,6 +98,26 @@ const App: React.FC = () => {
       setDiffContent(lastUnannotatedSentence.mt);
       setSentenceID(lastUnannotatedSentence._id);
       setModifiedText(lastUnannotatedSentence.mt);
+      
+      // Check if there are existing annotations for this sentence and annotator
+      if (qaMode && annotator && lastUnannotatedSentence.annotations && lastUnannotatedSentence.annotations[`${annotator}_annotations`]) {
+        // Load existing annotation spans
+        const prev_annotation = lastUnannotatedSentence.annotations[`${annotator}_annotations`];
+        const modified_spans = prev_annotation.annotatedSpans.map(span => ({
+          ...span,
+          original_text: span.error_text_segment,
+          start_index_translation: span.start_index,
+          end_index_translation: span.end_index,
+        }));
+        setErrorSpans(modified_spans);
+        setAddedErrorSpans(modified_spans);
+        setDiffContent(prev_annotation.corrected_sentence);
+        setModifiedText(prev_annotation.corrected_sentence);
+      } else {
+        // Clear if no existing annotations
+        setErrorSpans([]);
+        setAddedErrorSpans([]);
+      }
 
       // Remove active class from all rows first
       document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
@@ -233,6 +253,26 @@ const App: React.FC = () => {
           setDiffContent(nextSentence.mt);
           setSentenceID(nextSentence._id);
           setModifiedText(nextSentence.mt);
+          
+          // Check if there are existing annotations for this sentence and annotator
+          if (qaMode && annotator && nextSentence.annotations && nextSentence.annotations[`${annotator}_annotations`]) {
+            // Load existing annotation spans
+            const prev_annotation = nextSentence.annotations[`${annotator}_annotations`];
+            const modified_spans = prev_annotation.annotatedSpans.map(span => ({
+              ...span,
+              original_text: span.error_text_segment,
+              start_index_translation: span.start_index,
+              end_index_translation: span.end_index,
+            }));
+            setErrorSpans(modified_spans);
+            setAddedErrorSpans(modified_spans);
+            setDiffContent(prev_annotation.corrected_sentence);
+            setModifiedText(prev_annotation.corrected_sentence);
+          } else {
+            // Clear if no existing annotations
+            setErrorSpans([]);
+            setAddedErrorSpans([]);
+          }
         }
 
         // Remove active class from all rows first
@@ -251,7 +291,6 @@ const App: React.FC = () => {
 
         // Reset States
         setOverallScore(50);
-        setErrorSpans([]);
         // setSpanSeverity("Minor");
         setSpanSeverity("");
         // setTranslatedText(machineTranslation);
