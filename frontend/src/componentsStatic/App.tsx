@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [activeLanguage, setActiveLanguage] = useState("Mandarin");
 
   const [qaMode, setQAMode] = useState(false);
+  const [forceScroll, setForceScroll] = useState(false);
 
   // Dataset
   const [dataset, setDataset] = useState<DatasetType | null>(null);
@@ -132,10 +133,11 @@ const App: React.FC = () => {
       // Apply highlight to the clicked row
       if (rowElement) {
         rowElement.classList.add("active-db-row");
-        // Scroll the row into view
-        rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
+      // Force scroll to the current sentence
+      setForceScroll(true);
+      
       // Show success toast 
       const modeText = qaMode ? "QA-ed" : "annotated";
       toast.success(`Navigated to the next un${modeText} sentence`);
@@ -285,8 +287,6 @@ const App: React.FC = () => {
         // Apply highlight to the clicked row
         if (rowElement) {
           rowElement.classList.add("active-db-row");
-          // Scroll the row into view
-          // rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         // Reset States
@@ -353,6 +353,8 @@ const App: React.FC = () => {
               setQAMode={setQAMode}
               activeLanguage={activeLanguage}
               setActiveLanguage={setActiveLanguage}
+              forceScroll={forceScroll}
+              setForceScroll={setForceScroll}
             />
             <div className='annotator-selector'>
               {qaMode && (
