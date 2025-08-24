@@ -70,6 +70,8 @@ type DatabaseSentenceViewProps = {
   setQAMode: React.Dispatch<React.SetStateAction<boolean>>;
   activeLanguage: string;
   setActiveLanguage: React.Dispatch<React.SetStateAction<string>>;
+  forceScroll: boolean;
+  setForceScroll: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
@@ -92,7 +94,9 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   qaMode,
   setQAMode,
   activeLanguage,
-  setActiveLanguage
+  setActiveLanguage,
+  forceScroll,
+  setForceScroll
 }) => {
   const [row_active, setRow_active] = useState<boolean>(false);
 
@@ -104,6 +108,44 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                        'announced the invention of a new diagnostic tool that can sort cells by ' + 
                        'type: a tiny printable chip that can be manufactured using standard '+
                        'inkjet printers for possibly about one U.S. cent each.'
+
+  // Function to scroll to the current sentence in the database view
+  const scrollToCurrentSentence = (sentenceId: string) => {
+    const currentSentence = sentenceData.find(item => item._id === sentenceId);
+    if (currentSentence) {
+      const rowElement = document.querySelector(`.db-row-${currentSentence.id}`) as HTMLElement;
+      if (rowElement) {
+        const dbViewContainer = document.querySelector('.db-sentence-view') as HTMLElement;
+        if (dbViewContainer) {
+          // Calculate the scroll offset to center
+          const rowTop = rowElement.offsetTop;
+          const containerHeight = dbViewContainer.clientHeight;
+          const rowHeight = rowElement.clientHeight;
+          
+          const targetScrollTop = rowTop - (containerHeight / 2) + (rowHeight / 2);
+          
+          dbViewContainer.scrollTo({
+            top: targetScrollTop,
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+  };
+
+  // Effect to scroll to current sentence when sentenceID changes or forceScroll is triggered
+  useEffect(() => {
+    if (sentenceID && sentenceID !== "undefined_id") {
+      scrollToCurrentSentence(sentenceID);
+    }
+  }, [sentenceID, sentenceData, forceScroll]);
+
+  // Reset forceScroll after it's been used
+  useEffect(() => {
+    if (forceScroll) {
+      setForceScroll(false);
+    }
+  }, [forceScroll, setForceScroll]);
 
   // useEffect(() => {
   //   fetch("/mandarin_dataset.json")
