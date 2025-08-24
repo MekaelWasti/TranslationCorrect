@@ -149,15 +149,7 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
     highlight: HighlightedError,
     highlightIdx: number
   ) => {
-    // Update any select box’s background color:
-    const selectElement = document.querySelector(".span-score-section select");
-    if (selectElement) {
-      (selectElement as HTMLElement).style.backgroundColor =
-        colorMappings[highlight.error_type];
-      (selectElement as HTMLElement).style.color = "#ffffff";
-    }
-
-    // If it’s a left‐click: simply select the span for editing but don't open dropdown
+    // If it's a left‐click: simply select the span for editing but don't open dropdown
     if (e.button === 0) {
       setSelectedSpan(highlight.error_type);
       setHoveredHighlight(highlight);
@@ -270,18 +262,6 @@ const HighlightedText: React.FC<HighlightTextProps> = ({
       setSpanDropdown(false);
       setDropdownAnimation("");
     }, 250);
-    // Update the select element's background color on error type selection
-    const selectElement = document.querySelector(".span-score-section select");
-    if (selectElement) {
-      (selectElement as HTMLElement).style.backgroundColor =
-        colorMappings[type];
-      (selectElement as HTMLElement).style.color = "#ffffff";
-      // Add focus to the select element
-      (selectElement as HTMLElement).focus();
-      selectElement.dispatchEvent(
-        new MouseEvent("mousedown", { bubbles: true })
-      );
-    }
   };
 
   // Build an array of “ranges” from your highlights prop
