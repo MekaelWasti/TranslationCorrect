@@ -48,6 +48,7 @@ const App: React.FC = () => {
   const [activeLanguage, setActiveLanguage] = useState("Mandarin");
 
   const [qaMode, setQAMode] = useState(false);
+  const [forceScroll, setForceScroll] = useState(false);
 
   // Dataset
   const [dataset, setDataset] = useState<DatasetType | null>(null);
@@ -98,6 +99,26 @@ const App: React.FC = () => {
       setDiffContent(lastUnannotatedSentence.mt);
       setSentenceID(lastUnannotatedSentence._id);
       setModifiedText(lastUnannotatedSentence.mt);
+      
+      // Check if there are existing annotations for this sentence and annotator
+      if (qaMode && annotator && lastUnannotatedSentence.annotations && lastUnannotatedSentence.annotations[`${annotator}_annotations`]) {
+        // Load existing annotation spans
+        const prev_annotation = lastUnannotatedSentence.annotations[`${annotator}_annotations`];
+        const modified_spans = prev_annotation.annotatedSpans.map(span => ({
+          ...span,
+          original_text: span.error_text_segment,
+          start_index_translation: span.start_index,
+          end_index_translation: span.end_index,
+        }));
+        setErrorSpans(modified_spans);
+        setAddedErrorSpans(modified_spans);
+        setDiffContent(prev_annotation.corrected_sentence);
+        setModifiedText(prev_annotation.corrected_sentence);
+      } else {
+        // Clear if no existing annotations
+        setErrorSpans([]);
+        setAddedErrorSpans([]);
+      }
 
       // Remove active class from all rows first
       document.querySelectorAll('[class^="db-row-"]').forEach((row) => {
@@ -112,10 +133,11 @@ const App: React.FC = () => {
       // Apply highlight to the clicked row
       if (rowElement) {
         rowElement.classList.add("active-db-row");
-        // Scroll the row into view
-        rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
       }
 
+      // Force scroll to the current sentence
+      setForceScroll(true);
+      
       // Show success toast 
       const modeText = qaMode ? "QA-ed" : "annotated";
       toast.success(`Navigated to the next un${modeText} sentence`);
@@ -233,6 +255,26 @@ const App: React.FC = () => {
           setDiffContent(nextSentence.mt);
           setSentenceID(nextSentence._id);
           setModifiedText(nextSentence.mt);
+          
+          // Check if there are existing annotations for this sentence and annotator
+          if (qaMode && annotator && nextSentence.annotations && nextSentence.annotations[`${annotator}_annotations`]) {
+            // Load existing annotation spans
+            const prev_annotation = nextSentence.annotations[`${annotator}_annotations`];
+            const modified_spans = prev_annotation.annotatedSpans.map(span => ({
+              ...span,
+              original_text: span.error_text_segment,
+              start_index_translation: span.start_index,
+              end_index_translation: span.end_index,
+            }));
+            setErrorSpans(modified_spans);
+            setAddedErrorSpans(modified_spans);
+            setDiffContent(prev_annotation.corrected_sentence);
+            setModifiedText(prev_annotation.corrected_sentence);
+          } else {
+            // Clear if no existing annotations
+            setErrorSpans([]);
+            setAddedErrorSpans([]);
+          }
         }
 
         // Remove active class from all rows first
@@ -245,13 +287,10 @@ const App: React.FC = () => {
         // Apply highlight to the clicked row
         if (rowElement) {
           rowElement.classList.add("active-db-row");
-          // Scroll the row into view
-          // rowElement.scrollIntoView({ behavior: "smooth", block: "center" });
         }
 
         // Reset States
         setOverallScore(50);
-        setErrorSpans([]);
         // setSpanSeverity("Minor");
         setSpanSeverity("");
         // setTranslatedText(machineTranslation);
@@ -314,6 +353,8 @@ const App: React.FC = () => {
               setQAMode={setQAMode}
               activeLanguage={activeLanguage}
               setActiveLanguage={setActiveLanguage}
+              forceScroll={forceScroll}
+              setForceScroll={setForceScroll}
             />
             <div className='annotator-selector'>
               {qaMode && (
