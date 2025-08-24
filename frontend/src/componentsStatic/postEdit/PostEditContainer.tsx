@@ -98,6 +98,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   // Add state for clear button
   const [clearButtonClicked, setClearButtonClicked] = useState(false);
+  const [prevErrorSpansLength, setPrevErrorSpansLength] = useState(0);
 
   // Helper functions for caret management:
   function getCaretCharacterOffsetWithin(element: Node): number {
@@ -300,6 +301,15 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       document.removeEventListener("mouseup", handleNativeMouseUp);
     };
   }, []);
+
+  // Reset highlightInserted when a new span is added
+  useEffect(() => {
+    if (errorSpans.length > prevErrorSpansLength && highlightInserted) {
+      // A new span was added and highlightInserted was true, so reset it
+      setHighlightInserted(false);
+    }
+    setPrevErrorSpansLength(errorSpans.length);
+  }, [errorSpans.length, prevErrorSpansLength, highlightInserted]);
 
   // Native event handler for use with addEventListener
   const handleNativeMouseUp = (event: MouseEvent) => {
