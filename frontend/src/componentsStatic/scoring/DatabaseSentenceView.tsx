@@ -38,7 +38,11 @@ import { generateDiff } from "../postEdit/PostEditContainer"
 type AssignedIndexes = Record<string, (number | [number, number])[]>;
 
 const assignedMandarin: AssignedIndexes = {};
-const assignedCantonese: AssignedIndexes = {};
+const assignedCantonese: AssignedIndexes = {
+  loka9: [997, 1196],
+  Phantom65536: [1197, 1396],
+  wingspecialist: [1397, 1596]
+};
 const assignedShanghainese: AssignedIndexes = {};
 
 // Type Definitions
