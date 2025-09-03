@@ -1,20 +1,20 @@
 export const getSpanDiffs = (
-    annotationData: any[],
-    qaData: any[]
+    annotationSpans: any[],
+    qaSpans: any[]
 ) => {
     let annotationRemainderSpans = [];
     let qaRemainderSpans = [];
     let sharedSpans = [];
     
-    let annotationDataCopy = structuredClone(annotationData);
-    let qaDataCopy = structuredClone(qaData);
+    let annotationSpansCopy = structuredClone(annotationSpans);
+    let qaSpansCopy = structuredClone(qaSpans);
 
-    updateIndices(annotationDataCopy, qaDataCopy);
-    updateIndices(qaDataCopy, annotationDataCopy);
+    updateIndices(annotationSpansCopy, qaSpansCopy);
+    updateIndices(qaSpansCopy, annotationSpansCopy);
 
-    while (annotationDataCopy && qaDataCopy) {
-        const annotationSpan = annotationDataCopy[0];
-        const qaSpan = qaDataCopy[0];
+    while (annotationSpansCopy && qaSpansCopy) {
+        const annotationSpan = annotationSpansCopy[0];
+        const qaSpan = qaSpansCopy[0];
 
         // Spans in the same location
         if (annotationSpan.start_index === qaSpan.start_index) {
@@ -24,20 +24,20 @@ export const getSpanDiffs = (
                 annotationSpan.error_severity === qaSpan.error_severity
             ) {
                 sharedSpans.push(annotationSpan);
-                annotationDataCopy.shift();
-                qaDataCopy.shift();
+                annotationSpansCopy.shift();
+                qaSpansCopy.shift();
             // Spans are different
             } else {
-                annotationRemainderSpans.push(annotationDataCopy.shift());
-                qaRemainderSpans.push(qaDataCopy.shift());
+                annotationRemainderSpans.push(annotationSpansCopy.shift());
+                qaRemainderSpans.push(qaSpansCopy.shift());
             }
         // Spans are in different locations
         } else {
             // Remove the span with an earlier start index
             if (annotationSpan.start_index < qaSpan.start_index) {
-                annotationRemainderSpans.push(annotationDataCopy.shift());
+                annotationRemainderSpans.push(annotationSpansCopy.shift());
             } else {
-                qaRemainderSpans.push(qaDataCopy.shift());
+                qaRemainderSpans.push(qaSpansCopy.shift());
             }
         }
     }
