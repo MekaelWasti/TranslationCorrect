@@ -10,6 +10,7 @@ import { UserSelectorDropdown } from "../scoring/UserSelector";
 type DatasetType = {
   mandarin_dataset: any[];
   cantonese_dataset: any[];
+  cantonese_pivot_dataset?: any[];
 };
 
 type DatabaseSentenceViewProps = {
@@ -136,8 +137,12 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       setSentenceData(dataset.mandarin_dataset ?? []);
       setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
-      setSentenceData(dataset.cantonese_dataset ?? []);
-      setCurrentDatabase("annotation-tool-cantonese");
+      // Check if user should use pivot dataset
+      const un = username.trim().toLowerCase();
+      const isPivot = un === 'aiden';
+      console.log("isPivot:", isPivot);
+      setSentenceData(isPivot ? dataset.cantonese_pivot_dataset ?? [] : dataset.cantonese_dataset ?? []);
+      setCurrentDatabase(isPivot ? "annotation-tool-cantonese-pivot" : "annotation-tool-cantonese");
     }
   };
 
