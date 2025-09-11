@@ -4,7 +4,42 @@ import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 import { generateDiff } from "../postEdit/PostEditContainer"
-import { UserSelectorDropdown } from "../scoring/UserSelector";
+
+/**
+ * 📝 How to assign sentences to annotators:
+ *
+ * - Get annotators USERNAME (case-sensitive) to assign them a list of sentences.
+ * - You can give a mix of:
+ *    → one sentence (just a number, like 12)
+ *    → or a range (in square brackets, like [5, 10])
+ *
+ * ✅ Examples:
+ *   kim: [5, [10, 15], [30, 35], 44] → means kim gets:
+ *     - sentence 5
+ *     - sentences 10 to 15 (inclusive)
+ *     - sentences 30 to 35 (inclusive)
+ *     - and sentence 44
+ *
+ * ✅ Example format:
+ *    const assignedMandarin = {
+ *        kim: [1, [5, 10], 20],
+ *        alice: [[15, 18], 25, 30],
+ *        bob: [[40, 45]],
+ *     };
+ *
+ * ⚠️ Indexing rules:
+ *   - Mandarin and Shanghainese: start at 1
+ *   - Cantonese: starts at 0
+ *   → Just write the number you see in the dataset.
+ *
+ * 🔒 No overlaps unless on purpose, as it will show up more than once.
+ */
+
+type AssignedIndexes = Record<string, (number | [number, number])[]>;
+
+const assignedMandarin: AssignedIndexes = {};
+const assignedCantonese: AssignedIndexes = {};
+const assignedShanghainese: AssignedIndexes = {};
 
 // Type Definitions
 type DatasetType = {
@@ -150,7 +185,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     setAddedErrorSpans([]);
     setHighlightedError([]);
 
-    if (`${username}_annotations` in item.annotations) {
+    if (`${annotator}_annotations` in item.annotations) {
       handlePrevAnnotation(item);
     }
   };
@@ -158,12 +193,45 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   const handlePrevAnnotation = (item: any) => {
     // Fetching the previous annotation data
     console.log("user has done this annotation already, loading previously submitted annotation");
-    const prev_annotation = item.annotations[`${username}_annotations`];
+    const prev_annotation = item.annotations[`${annotator}_annotations`];
     console.log("previous annotation data:", prev_annotation);
 
+    // There was a bug earlier on with the code and I couldn't edit the database
+    // so we're doing this instead
+    let corrected_sentence = prev_annotation.corrected_sentence;
+
+    if (corrected_sentence === bug_sentence) {
+      console.log("We got the \'On Monday\' bug");
+      corrected_sentence = item.mt;
+      console.log("Corrected sentence is now the following:");
+      console.log(corrected_sentence);
+      for (let span of prev_annotation.annotatedSpans) {
+        console.log("Checking if span is an omission span:");
+        console.log(span);
+        if (
+          span.error_type === "Omission" &&
+          typeof span.start_index === "number" &&
+          typeof span.error_text_segment === "string"
+        ) {
+          console.log("Appending omission to corrected sentence");
+          console.log(corrected_sentence.slice(0, span.start_index));
+          console.log(span.error_text_segment);
+          console.log(corrected_sentence.slice(span.start_index));
+          corrected_sentence =
+            corrected_sentence.slice(0, span.start_index) +
+            span.error_text_segment +
+            corrected_sentence.slice(span.start_index);
+          console.log("New corrected sentence:");
+          console.log(corrected_sentence);
+        }
+      }
+    }
+
+    console.log("corrected sentence to be set:");
+    console.log(corrected_sentence);
     // Displays the corrected version of the sentence done by the annotators
-    setDiffContent(prev_annotation.corrected_sentence);
-    setModifedText(prev_annotation.corrected_sentence);
+    setDiffContent(corrected_sentence);
+    setModifedText(corrected_sentence);
 
     // setAddedErrorSpans and setHighlightedError use different namings of attributes
     // so we accomodate for that here
@@ -175,14 +243,56 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       end_index_translation: span.end_index,
     }));
     console.log("new spans:", modified_spans);
-    
+
     // This gives us the spans
     setAddedErrorSpans(modified_spans);
     setHighlightedError(modified_spans);
 
     // This gives us the diff in the machine translation portion
-    generateDiff(item.mt, prev_annotation.corrected_sentence, setModifedText, setDiffContent);
+    generateDiff(item.mt, corrected_sentence, setModifedText, setDiffContent);
   };
+
+  // Helper function to expand assigned indexes
+  const expandAssignedIndexes = (
+    assignments: (number | [number, number])[],
+    offset: number = 0
+  ): number[] => {
+    const result: number[] = [];
+    for (const item of assignments) {
+      if (typeof item === "number") {
+        result.push(item + offset);
+      } else {
+        const [start, end] = item;
+        for (let i = start; i <= end; i++) {
+          result.push(i + offset);
+        }
+      }
+    }
+    return result;
+  };
+
+  // Helper function to handle assignment logic
+  function handleAssignment(
+    fullData: any[],
+    username: string,
+    assignments: Record<string, (number | [number, number])[]>,
+    indexOffset: number,
+    setSentenceData: (data: any[]) => void
+  ) {
+    if (username in assignments) {
+      const assignedIndexes = assignments[username];
+      const expandedIndexes = expandAssignedIndexes(
+        assignedIndexes,
+        indexOffset
+      );
+      const slicedData = expandedIndexes
+        .filter((i) => i >= 0 && i < fullData.length)
+        .map((i) => fullData[i]);
+      setSentenceData(slicedData);
+    } else {
+      setSentenceData(fullData);
+    }
+  }
 
   const handleDatabaseFetch = async (
     e: React.MouseEvent<HTMLButtonElement>
@@ -196,18 +306,73 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
       console.error("Dataset is undefined");
     } else if (language === "Mandarin") {
       const fullData = dataset.mandarin_dataset ?? [];
-      setSentenceData(fullData);
+      handleAssignment(
+        fullData,
+        username,
+        assignedMandarin,
+        -1,
+        setSentenceData
+      );
       setCurrentDatabase("annotation-tool-dataset");
     } else if (language === "Cantonese") {
-      // Check if user should use pivot dataset
+      // If user york or beatricengsw, then switch dataset
       const un = username.trim().toLowerCase();
-      // const isPivot = un === 'aiden';
       const isPivot = false;
-      console.log("isPivot:", isPivot);
-      setSentenceData(isPivot ? dataset.cantonese_pivot_dataset ?? [] : dataset.cantonese_dataset ?? []);
+      const fullData = isPivot ? dataset.cantonese_pivot_dataset ?? [] : dataset.cantonese_dataset ?? [];
+      handleAssignment(
+        fullData,
+        username,
+        assignedCantonese,
+        0,
+        setSentenceData
+      );
       setCurrentDatabase(isPivot ? "annotation-tool-cantonese-pivot" : "annotation-tool-cantonese");
+    } else if (language === "Shanghainese") {
+      const fullData = dataset.shanghainese_dataset ?? [];
+      handleAssignment(
+        fullData,
+        username,
+        assignedShanghainese,
+        -1,
+        setSentenceData
+      );
+      setCurrentDatabase("annotation-tool-shanghainese");
     }
+    // We might need noFunnyBusiness here too
   };
+
+  const handleModeChange = () => {
+    console.log("mode toggle pressed")
+
+    setQAMode(prev => prev ? false : true);
+    // We have to reset the annotator state to the user, since 
+    // we don't want the user to send in annotations as another
+    // annotator.
+    // setAnnotator(username);
+    noFunnyBusiness();
+  }
+
+  const noFunnyBusiness = () => {
+    // IMPORTANT NOTE
+    // I'm not good at JS, but I think that qaMode saves the state
+    // from when the button was initially pressed, and does not change
+    // during the click function. So, we need to actually invert the if
+    // statement. 
+    if (!qaMode) {
+      console.log("we are now in qa mode")
+      console.log(activeLanguage);
+      console.log(username);
+      console.log("ethandb")
+      console.log(activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username))
+      if (activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username)) {
+        console.log("set to hannah");
+        setAnnotator("Hannah");
+      } else if (activeLanguage === "Cantonese" && ! cantonese_annotators.includes(username)) {
+        setAnnotator("loka9");
+      }
+      console.log(annotator);
+    }
+  }
 
   return (
     <div className="db-sentence-view-parent">
@@ -235,6 +400,12 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
           onClick={handleDatabaseFetch}
         >
           Shanghainese
+        </button>
+        <button
+        className={`language-dataset-button`}
+          onClick={handleModeChange}
+        >
+          {qaMode ? 'QA Mode' : 'Annotation Mode'}
         </button>
         {/* <button
           className={`language-dataset-button ${
@@ -289,8 +460,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>Sentence</th>
               <th>MT</th>
               <th>Reference</th>
-              <th>Complete</th>
-              <th>User</th>
+              <th>Annotation Done</th>
+              {qaMode && <th>QA Done</th>}
             </tr>
           </thead>
           <tbody>
@@ -321,6 +492,20 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
                   </td>
+                  {qaMode && <td className="status-cell">
+                    {item.annotations &&
+                    item.annotations.hasOwnProperty(
+                      `${username}_qa`
+                    ) ? (
+                      <img
+                        className="annotation-checkmark"
+                        src={checkmark}
+                        alt=""
+                      />
+                    ) : (
+                      <img className="annotation-cross" src={cross} alt="" />
+                    )}
+                  </td>}
                 </tr>
               ))
             ) : (
