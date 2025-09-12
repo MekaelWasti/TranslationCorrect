@@ -66,8 +66,8 @@ type DatabaseSentenceViewProps = {
   setSentenceData: React.Dispatch<any>;
   setDataset: React.Dispatch<React.SetStateAction<DatasetType | null>>;
   dataset: DatasetType | null;
-  qaMode: boolean;
-  setQAMode: React.Dispatch<React.SetStateAction<boolean>>;
+  currentMode: "Annotation Mode" | "QA Mode" | "QA Comparison";
+  setCurrentMode: React.Dispatch<React.SetStateAction<"Annotation Mode" | "QA Mode" | "QA Comparison">>;
   activeLanguage: string;
   setActiveLanguage: React.Dispatch<React.SetStateAction<string>>;
   forceScroll: boolean;
@@ -91,8 +91,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   setSentenceData,
   setDataset,
   dataset,
-  qaMode,
-  setQAMode,
+  currentMode,
+  setCurrentMode,
   activeLanguage,
   setActiveLanguage,
   forceScroll,
@@ -341,29 +341,22 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     // We might need noFunnyBusiness here too
   };
 
-  const handleModeChange = () => {
-    console.log("mode toggle pressed")
 
-    setQAMode(prev => prev ? false : true);
-    // We have to reset the annotator state to the user, since 
-    // we don't want the user to send in annotations as another
-    // annotator.
-    // setAnnotator(username);
+  // Effect to handle mode changes
+  useEffect(() => {
     noFunnyBusiness();
-  }
-
+  }, [currentMode]);
   const noFunnyBusiness = () => {
-    // IMPORTANT NOTE
-    // I'm not good at JS, but I think that qaMode saves the state
-    // from when the button was initially pressed, and does not change
-    // during the click function. So, we need to actually invert the if
-    // statement. 
-    if (!qaMode) {
+    // In Annotation Mode, the annotator should be the current user
+    if (currentMode !== "QA Mode" && currentMode !== "QA Comparison") {
+      console.log("we are now in annotation mode")
+      console.log("Setting annotator to current user:", username);
+      setAnnotator(username);
+    } else {
+      // In QA Mode, set default annotator based on language if current user is not an annotator
       console.log("we are now in qa mode")
       console.log(activeLanguage);
       console.log(username);
-      console.log("ethandb")
-      console.log(activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username))
       if (activeLanguage === "Mandarin" && ! mandarin_annotators.includes(username)) {
         console.log("set to hannah");
         setAnnotator("Hannah");
@@ -401,13 +394,15 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
         >
           Shanghainese
         </button>
-        <button
-        className={`language-dataset-button`}
-          onClick={handleModeChange}
+        <select
+          className="language-mode-dropdown"
+          value={currentMode}
+          onChange={(e) => setCurrentMode(e.target.value as "Annotation Mode" | "QA Mode" | "QA Comparison")}
         >
-          {qaMode ? 'QA Mode' : 'Annotation Mode'}
-        </button>
-        {/* <button
+          <option value="Annotation Mode">Annotation Mode</option>
+          <option value="QA Mode">QA Mode</option>
+          <option value="QA Comparison">QA Comparison</option>
+        </select>        {/* <button
           className={`language-dataset-button ${
             activeLanguage == "Hakka" ? "active" : ""
           }`}
@@ -461,7 +456,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>MT</th>
               <th>Reference</th>
               <th>Annotation Done</th>
-              {qaMode && <th>QA Done</th>}
+              {(currentMode === "QA Mode" || currentMode === "QA Comparison") && <th>QA Done</th>}
             </tr>
           </thead>
           <tbody>
@@ -492,7 +487,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
                   </td>
-                  {qaMode && <td className="status-cell">
+                  {(currentMode === "QA Mode" || currentMode === "QA Comparison") && <td className="status-cell">
                     {item.annotations &&
                     item.annotations.hasOwnProperty(
                       `${username}_qa`

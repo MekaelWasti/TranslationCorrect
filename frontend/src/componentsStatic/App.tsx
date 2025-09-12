@@ -10,7 +10,7 @@ import { LoginForm } from "./scoring/LoginForm";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AnnotatorSelectorDropdown } from "./scoring/AnnotatorSelector";
-
+import QAComparisonContainer from "./qa/QAComparisonContainer";
 import logo from "../assets/logo.svg";
 
 // Type Definitions
@@ -47,9 +47,8 @@ const App: React.FC = () => {
   const [currentDatabase, setCurrentDatabase] = useState<string | null>("");
   const [activeLanguage, setActiveLanguage] = useState("Mandarin");
 
-  const [qaMode, setQAMode] = useState(false);
+  const [currentMode, setCurrentMode] = useState<"Annotation Mode" | "QA Mode" | "QA Comparison">("Annotation Mode");
   const [forceScroll, setForceScroll] = useState(false);
-
   // Dataset
   const [dataset, setDataset] = useState<DatasetType | null>(null);
 
@@ -82,7 +81,7 @@ const App: React.FC = () => {
 
   const handleGoToLastAnnotation = () => {
     // Use different annotation keys based on mode
-    const annotationKey = qaMode ? `${username}_qa` : `${username}_annotations`;
+    const annotationKey = (currentMode === "QA Mode" || currentMode === "QA Comparison") ? `${username}_qa` : `${username}_annotations`;
     const lastCompletedIndex = sentenceData
       .map((item, index) => ({
         index,
@@ -101,7 +100,7 @@ const App: React.FC = () => {
       setModifiedText(lastUnannotatedSentence.mt);
       
       // Check if there are existing annotations for this sentence and annotator
-      if (qaMode && annotator && lastUnannotatedSentence.annotations && lastUnannotatedSentence.annotations[`${annotator}_annotations`]) {
+      if ((currentMode === "QA Mode" || currentMode === "QA Comparison") && annotator && lastUnannotatedSentence.annotations && lastUnannotatedSentence.annotations[`${annotator}_annotations`]) {
         // Load existing annotation spans
         const prev_annotation = lastUnannotatedSentence.annotations[`${annotator}_annotations`];
         const modified_spans = prev_annotation.annotatedSpans.map(span => ({
@@ -139,11 +138,11 @@ const App: React.FC = () => {
       setForceScroll(true);
       
       // Show success toast 
-      const modeText = qaMode ? "QA-ed" : "annotated";
+      const modeText = (currentMode === "QA Mode" || currentMode === "QA Comparison") ? "QA-ed" : "annotated";
       toast.success(`Navigated to the next un${modeText} sentence`);
     } else {
       // Show info toast if no more unannotated sentences
-      const modeText = qaMode ? "QA-ed" : "annotated";
+      const modeText = (currentMode === "QA Mode" || currentMode === "QA Comparison") ? "QA-ed" : "annotated";
       toast.info(`No more un${modeText} sentences found`);
     }
   };
@@ -193,7 +192,7 @@ const App: React.FC = () => {
 
     let annotationKey = `${username}_annotations`;
 
-    if (qaMode) {
+    if (currentMode === "QA Mode" || currentMode === "QA Comparison") {
       annotationKey = `${username}_qa`;
       packageHighlightedErrors['annotator'] = annotator;
     }
@@ -257,7 +256,7 @@ const App: React.FC = () => {
           setModifiedText(nextSentence.mt);
           
           // Check if there are existing annotations for this sentence and annotator
-          if (qaMode && annotator && nextSentence.annotations && nextSentence.annotations[`${annotator}_annotations`]) {
+          if ((currentMode === "QA Mode" || currentMode === "QA Comparison") && annotator && nextSentence.annotations && nextSentence.annotations[`${annotator}_annotations`]) {
             // Load existing annotation spans
             const prev_annotation = nextSentence.annotations[`${annotator}_annotations`];
             const modified_spans = prev_annotation.annotatedSpans.map(span => ({
@@ -349,15 +348,15 @@ const App: React.FC = () => {
               setSentenceData={setSentenceData}
               dataset={dataset}
               setDataset={setDataset}
-              qaMode={qaMode}
-              setQAMode={setQAMode}
               activeLanguage={activeLanguage}
               setActiveLanguage={setActiveLanguage}
               forceScroll={forceScroll}
               setForceScroll={setForceScroll}
+              currentMode={currentMode}
+              setCurrentMode={setCurrentMode}
             />
             <div className='annotator-selector'>
-              {qaMode && (
+              {(currentMode === "QA Mode" || currentMode === "QA Comparison") && (
                 <AnnotatorSelectorDropdown
                   username={username}
                   annotator={annotator}
@@ -378,7 +377,7 @@ const App: React.FC = () => {
                 className="go-to-last-annotated-button"
                 onClick={handleGoToLastAnnotation}
               >
-                {qaMode ? "Go To Last QA-ed" : "Go To Last Annotated"}
+                {(currentMode === "QA Mode" || currentMode === "QA Comparison") ? "Go To Last QA-ed" : "Go To Last Annotated"}
               </button>
             </div>
             <div className="divider"></div>
@@ -414,7 +413,10 @@ const App: React.FC = () => {
               overallScore={overallScore}
               setOverallScore={setOverallScore}
             /> */}
-            <PostEditContainer
+
+            {/* Post Edit Section - hide if QA Comparison mode */}
+            {currentMode !== "QA Comparison" && (
+              <PostEditContainer
               machineTranslation={machineTranslation}
               setMachineTranslation={setTranslatedText}
               // highlightedError={highlightedError!}
@@ -426,12 +428,18 @@ const App: React.FC = () => {
               // setAddedErrorSpans={setAddedErrorSpans}
               diffContent={diffContent}
               setDiffContent={setDiffContent}
-            />
+              currentMode={currentMode}
+              />
+            )}
+
+            {/* QA Comparison Section - only show in QA Comparison mode */}
+            {currentMode === "QA Comparison" && <QAComparisonContainer sentenceData={sentenceData} sentenceID={sentenceID} annotator={annotator} username={username} machineTranslation={machineTranslation} />}
+
             {/* Translation Submission Section */}
             <div className="accept-translation-section">
               {/* <button onClick={() => setEntryIdx(curEntryIdx + 1)}> */}
               <button onClick={() => handleSubmitAnnotation()}>
-                {qaMode ? "Submit QA" : "Submit Annotation"}
+                {(currentMode === "QA Mode" || currentMode === "QA Comparison") ? "Submit QA" : "Submit Annotation"}
               </button>
             </div>
           </div>
