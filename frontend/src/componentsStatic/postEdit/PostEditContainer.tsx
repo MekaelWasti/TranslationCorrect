@@ -12,6 +12,7 @@ import { SpanScoreDropdown } from "../scoring/SpanScoreDropdown";
 import { clear } from "console";
 
 type PostEditContainerProps = {
+  currentMode?: "Annotation Mode" | "QA Mode" | "QA Comparison";
   machineTranslation: string;
   setMachineTranslation: (newTranslation: string) => void;
   onDiffTextUpdate: (newDiffText: React.ReactNode) => void;
@@ -85,6 +86,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   setModifiedText,
   diffContent,
   setDiffContent,
+  currentMode,
 }) => {
   const editableDivRef = useRef<HTMLDivElement>(null);
   const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans, setErrorSpans } = useSpanEvalContext();
@@ -424,22 +426,24 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         <div className="post-edit-section-header">
           <h3>Post-Editing</h3>
         </div>
-        <div className="post-edit-section-header-buttons">
-          <button className="start-annotation-button">Start Annotation</button>
-          <button className="insert-span-button" onClick={applyHighlight}>
-            Insert Span
-          </button>
-          {/* <button className="custom-correction-button">Custom Correction</button> */}
-          <SpanScoreDropdown />
-          <button
-            className={`clear-spans-button ${
-              clearButtonClicked ? "clear-spans-button-confirm" : ""
-            }`}
-            onClick={handleClearSpansButton}
-          >
-            {clearButtonClicked ? "Clear?" : "Clear"}
-          </button>
-        </div>
+        {currentMode !== "QA Comparison" && (
+          <div className="post-edit-section-header-buttons">
+            <button className="start-annotation-button">Start Annotation</button>
+            <button className="insert-span-button" onClick={applyHighlight}>
+              Insert Span
+            </button>
+            {/* <button className="custom-correction-button">Custom Correction</button> */}
+            <SpanScoreDropdown />
+            <button
+              className={`clear-spans-button ${
+                clearButtonClicked ? "clear-spans-button-confirm" : ""
+              }`}
+              onClick={handleClearSpansButton}
+            >
+              {clearButtonClicked ? "Clear?" : "Clear"}
+            </button>
+          </div>
+        )}
         <div
           className="post-edit-translation-field"
           ref={editableDivRef}
