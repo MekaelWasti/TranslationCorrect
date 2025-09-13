@@ -4,6 +4,7 @@ import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 import { generateDiff } from "../postEdit/PostEditContainer"
+import { getSpanDiffs } from "../../util/getSpanDiffs";
 
 /**
  * 📝 How to assign sentences to annotators:
@@ -187,6 +188,12 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
 
     if (`${annotator}_annotations` in item.annotations) {
       handlePrevAnnotation(item);
+      console.log("item", item);
+      console.log("input1:", item.annotations["wingspecialist_annotations"].annotatedSpans);
+      console.log("input2:", item.annotations["ethanc_qa"].annotatedSpans);
+      const spanDiffOutput = getSpanDiffs(item.annotations["wingspecialist_annotations"].annotatedSpans,
+                                          item.annotations["ethanc_qa"].annotatedSpans);
+      console.log("spanDiffOutput:", spanDiffOutput);
     }
   };
 
