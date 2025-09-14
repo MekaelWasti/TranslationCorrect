@@ -22,6 +22,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
   const [qaSpans, setQASpans] = useState<Span[]>([]);
   const [sharedSpans, setSharedSpans] = useState<Span[]>([]);
   const [hasQAForAnnotator, setHasQAForAnnotator] = useState<boolean>(false);
+  const [annotatorCorrectedSentence, setAnnotatorCorrectedSentence] = useState<string>(machineTranslation);
+  const [qaCorrectedSentence, setQACorrectedSentence] = useState<string>(machineTranslation);
 
   // Load data when component mounts or when sentence/annotator changes
   const loadComparisonData = useCallback(() => {
@@ -32,6 +34,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       setQASpans([]);
       setSharedSpans([]);
       setHasQAForAnnotator(false);
+      setAnnotatorCorrectedSentence(machineTranslation);
+      setQACorrectedSentence(machineTranslation);
       return;
     }
 
@@ -46,6 +50,10 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       error_severity: span.error_severity,
     })) || [];
 
+    // Set annotator corrected sentence
+    const annotatorCorrected = annotatorAnnotation?.corrected_sentence || machineTranslation;
+    setAnnotatorCorrectedSentence(annotatorCorrected);
+
     // Get QA user spans
     const qaKey = `${username}_qa`;
     const qaAnnotation = currentSentence.annotations?.[qaKey];
@@ -53,6 +61,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     // Check if the QA was done for the current annotator
     let qaUserSpans: Span[] = [];
     let hasQA = false;
+    let qaCorrected = machineTranslation;
+    
     if (qaAnnotation && qaAnnotation.annotator === annotator) {
       qaUserSpans = qaAnnotation.annotatedSpans?.map((span: any) => ({
         start_index: span.start_index,
@@ -61,9 +71,13 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
         error_type: span.error_type,
         error_severity: span.error_severity,
       })) || [];
+      
+      // Set QA corrected sentence
+      qaCorrected = qaAnnotation?.corrected_sentence || machineTranslation;
       hasQA = true;
     }
 
+    setQACorrectedSentence(qaCorrected);
     setHasQAForAnnotator(hasQA);
 
     // Use getSpanDiffs to compare spans
@@ -72,7 +86,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     setAnnotationSpans(annotationRemainder);
     setQASpans(qaRemainder);
     setSharedSpans(shared);
-  }, [sentenceData, sentenceID, annotator, username]);
+  }, [sentenceData, sentenceID, annotator, username, machineTranslation]);
 
   useEffect(() => {
     loadComparisonData();
@@ -99,7 +113,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
         <div className="qa-comparison-content">
           <div className="qa-comparison-text">
             <HighlightedText
-              text={machineTranslation}
+              text={annotatorCorrectedSentence}
               highlights={convertSpansToHighlightedErrors(annotationSpans)}
               highlightKey="end_index_translation"
               disableEdit={true}
@@ -118,7 +132,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
           <div className="qa-comparison-text">
             {hasQAForAnnotator ? (
               <HighlightedText
-                text={machineTranslation}
+                text={qaCorrectedSentence}
                 highlights={convertSpansToHighlightedErrors(qaSpans)}
                 highlightKey="end_index_translation"
                 disableEdit={true}
