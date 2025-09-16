@@ -189,10 +189,11 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     if (`${annotator}_annotations` in item.annotations) {
       handlePrevAnnotation(item);
       console.log("item", item);
-      console.log("input1:", item.annotations["wingspecialist_annotations"].annotatedSpans);
-      console.log("input2:", item.annotations["ethanc_qa"].annotatedSpans);
-      const spanDiffOutput = getSpanDiffs(item.annotations["wingspecialist_annotations"].annotatedSpans,
-                                          item.annotations["ethanc_qa"].annotatedSpans);
+      console.log("input1:", item.annotations[`${annotator}_annotations`].annotatedSpans);
+      console.log("input2:", item.annotations[`${username}_qa`].annotatedSpans);
+      console.log("Getting span diffs...");
+      const spanDiffOutput = getSpanDiffs(item.annotations[`${annotator}_annotations`].annotatedSpans,
+                                          item.annotations[`${username}_qa`].annotatedSpans);
       console.log("spanDiffOutput:", spanDiffOutput);
     }
   };
