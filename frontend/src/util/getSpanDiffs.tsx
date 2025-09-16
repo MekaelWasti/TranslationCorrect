@@ -14,12 +14,21 @@ export interface Span {
     const qaRemainderSpans: Span[] = [];
     const sharedSpans: Span[] = [];
   
-    const annotationSpansCopy = structuredClone(annotationSpans) as Span[];
-    const qaSpansCopy = structuredClone(qaSpans) as Span[];
+    const annotationSpansCopy = copySpanArr(annotationSpans);
+    const qaSpansCopy = copySpanArr(qaSpans);
+
+    console.log("annotationSpansCopy", annotationSpansCopy);
+    console.log("qaSpansCopy", qaSpansCopy);
+
+    sortSpans(annotationSpansCopy);
+    sortSpans(qaSpansCopy);
+
+    console.log("annotationSpansCopy sorted", annotationSpansCopy);
+    console.log("qaSpansCopy sorted", qaSpansCopy);
   
     updateIndices(annotationSpansCopy, qaSpansCopy);
     updateIndices(qaSpansCopy, annotationSpansCopy);
-  
+    
     while (annotationSpansCopy.length > 0 && qaSpansCopy.length > 0) {
       const annotationSpan = annotationSpansCopy[0];
       const qaSpan = qaSpansCopy[0];
@@ -58,6 +67,10 @@ export interface Span {
       qaRemainderSpans.push(...qaSpansCopy);
     }
   
+    console.log("Completed getSpanDiffs");
+    console.log("annotationRemainderSpans", annotationRemainderSpans);
+    console.log("qaRemainderSpans", qaRemainderSpans);
+    console.log("sharedSpans", sharedSpans);
     return [annotationRemainderSpans, qaRemainderSpans, sharedSpans];
   };
   
@@ -80,3 +93,32 @@ export interface Span {
       }
     }
   };  
+
+  const sortSpans = (spans: Span[]): void => {
+    for (let i = 0; i < spans.length; i++) {
+        for (let j = 0; j < spans.length; j++) {
+            if (spans[j].start_index > spans[i].start_index) {
+                [spans[j], spans[i]] = [spans[i], spans[j]];
+            }
+        }
+    }
+  };
+
+  const copySpanArr = (spans: Span[]): Span[] => {
+    let spansCopy: Span[] = [];
+    for (let span of spans) {
+        console.log("span:", span);
+        let spanCopy: Span = {
+            start_index: span.start_index,
+            end_index: span.end_index,
+            error_text_segment: span.error_text_segment,
+            error_type: span.error_type,       
+            error_severity: span.error_severity,
+        }
+        console.log("spanCopy:", spanCopy);
+        spansCopy.push(spanCopy);
+        console.log("spansCopy:", spansCopy);
+    };
+    console.log("spansCopy:", JSON.stringify(spansCopy));
+    return spansCopy;
+  }
