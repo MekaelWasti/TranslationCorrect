@@ -17,17 +17,10 @@ export interface Span {
     const annotationSpansCopy = copySpanArr(annotationSpans);
     const qaSpansCopy = copySpanArr(qaSpans);
 
-    console.log("annotationSpansCopy", annotationSpansCopy);
-    console.log("qaSpansCopy", qaSpansCopy);
-
     sortSpans(annotationSpansCopy);
     sortSpans(qaSpansCopy);
-
-    console.log("annotationSpansCopy sorted", annotationSpansCopy);
-    console.log("qaSpansCopy sorted", qaSpansCopy);
   
-    updateIndices(annotationSpansCopy, qaSpansCopy);
-    updateIndices(qaSpansCopy, annotationSpansCopy);
+    adjustIndices(annotationSpansCopy, qaSpansCopy);
     
     while (annotationSpansCopy.length > 0 && qaSpansCopy.length > 0) {
       const annotationSpan = annotationSpansCopy[0];
@@ -67,24 +60,46 @@ export interface Span {
       qaRemainderSpans.push(...qaSpansCopy);
     }
   
-    console.log("Completed getSpanDiffs");
-    console.log("annotationRemainderSpans", annotationRemainderSpans);
-    console.log("qaRemainderSpans", qaRemainderSpans);
-    console.log("sharedSpans", sharedSpans);
     return [annotationRemainderSpans, qaRemainderSpans, sharedSpans];
   };
   
-  // Updates arr2 indices based on omissions in arr1
-  const updateIndices = (arr1: Span[], arr2: Span[]): void => {
-    // Assumes both are sorted by start_index
-    for (const span1 of arr1) {
-      if (span1.error_type === "Omission") {
-        updateIndicesHelper(span1, arr2);
+  const adjustIndices = (arr1: Span[], arr2: Span[]): void => {
+
+    // Something weird happens if we don't call copySpanArr, my working theory
+    // is that some of the common spans actually have the same memory address,
+    // so that makes things weird if we don't explicitly create a copy.
+    const a1OmissionSpans: Span[] = copySpanArr(getOmissionSpans(arr1));
+    const a2OmissionSpans: Span[] = copySpanArr(getOmissionSpans(arr2));
+
+    while (a1OmissionSpans.length > 0 || a2OmissionSpans.length > 0) {
+      // Only have a2OmissionSpans left
+      if (a1OmissionSpans.length == 0) {
+        adjustIndicesHelper(a2OmissionSpans.shift(), arr1);
+
+      // Only have a1OmissionSpans left
+      } else if (a2OmissionSpans.length == 0) {
+        adjustIndicesHelper(a1OmissionSpans.shift(), arr2);
+
+      // Both sets have an omission span in the same location
+      } else if (a1OmissionSpans[0].start_index == a2OmissionSpans[0].start_index &&
+                 a1OmissionSpans[0].end_index == a2OmissionSpans[0].end_index) {
+        a1OmissionSpans.shift();
+        a2OmissionSpans.shift();
+
+      } else if (a1OmissionSpans[0].start_index < a2OmissionSpans[0].start_index) {
+        const span: Span = a1OmissionSpans.shift();
+        adjustIndicesHelper(span, arr2);
+        adjustIndicesHelper(span, a2OmissionSpans);
+
+      } else {
+        const span: Span = a2OmissionSpans.shift();
+        adjustIndicesHelper(span, arr1);
+        adjustIndicesHelper(span, a1OmissionSpans);
       }
     }
   };
   
-  const updateIndicesHelper = (span1: Span, arr2: Span[]): void => {
+  const adjustIndicesHelper = (span1: Span, arr2: Span[]): void => {
     const span1Length = span1.end_index - span1.start_index;
     for (const span2 of arr2) {
       if (span2.start_index >= span1.start_index) {
@@ -93,6 +108,16 @@ export interface Span {
       }
     }
   };  
+
+  const getOmissionSpans = (spans: Span[]): Span[] => {
+    let omissionSpans: Span[] = [];
+    for (const span of spans) {
+      if (span.error_type === "Omission") {
+        omissionSpans.push(span);
+      }
+    }
+    return omissionSpans;
+  }
 
   const sortSpans = (spans: Span[]): void => {
     for (let i = 0; i < spans.length; i++) {
@@ -107,7 +132,6 @@ export interface Span {
   const copySpanArr = (spans: Span[]): Span[] => {
     let spansCopy: Span[] = [];
     for (let span of spans) {
-        console.log("span:", span);
         let spanCopy: Span = {
             start_index: span.start_index,
             end_index: span.end_index,
@@ -115,10 +139,7 @@ export interface Span {
             error_type: span.error_type,       
             error_severity: span.error_severity,
         }
-        console.log("spanCopy:", spanCopy);
         spansCopy.push(spanCopy);
-        console.log("spansCopy:", spansCopy);
     };
-    console.log("spansCopy:", JSON.stringify(spansCopy));
     return spansCopy;
   }
