@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getSpanDiffs, Span } from "../../util/getSpanDiffs";
+import { getSpanDiffs, Span } from "../../util/qaComparisonUtils";
 import HighlightedText from "../postEdit/HighlightedText";
 import "../../index.css";
 

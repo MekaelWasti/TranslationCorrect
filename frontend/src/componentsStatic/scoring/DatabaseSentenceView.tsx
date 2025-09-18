@@ -4,7 +4,7 @@ import sentences from "../../../public/mandarin_dataset.json";
 import checkmark from "../../assets/checkmark.svg";
 import cross from "../../assets/x_cross.svg";
 import { generateDiff } from "../postEdit/PostEditContainer"
-import { getSpanDiffs } from "../../util/getSpanDiffs";
+import { getSpanDiffs } from "../../util/qaComparisonUtils";
 
 /**
  * 📝 How to assign sentences to annotators:
