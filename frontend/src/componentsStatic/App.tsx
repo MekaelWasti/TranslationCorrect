@@ -207,7 +207,7 @@ const App: React.FC = () => {
       [annotationKey]: packageHighlightedErrors, // Dynamic key placement
     };
 
-    console.log(requestBody);
+    console.log("requestBody", requestBody);
 
     // Submit the annotation object
     // Show loading toast
