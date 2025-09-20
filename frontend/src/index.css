@@ -1648,3 +1648,79 @@ select:hover {
   display: inline-block;
   margin-left: 10px;
 }
+
+/* QA Span Selection Styles */
+.qa-clickable-span {
+  position: relative;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.qa-clickable-span:hover {
+  border: 2px solid #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+  transform: scale(1.02);
+}
+
+.qa-span-selected {
+  border: 2px solid #4CAF50 !important;
+  box-shadow: 0 0 12px rgba(76, 175, 80, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+.qa-move-button {
+  font-family: 'Montserrat', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  animation: qa-button-appear 0.3s ease-out;
+}
+
+.qa-move-button:hover {
+  animation: qa-button-pulse 1.5s infinite;
+}
+
+@keyframes qa-button-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes qa-button-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+  }
+}
+
+/* Enhanced QA comparison container for better interaction */
+.qa-comparison-container {
+  position: relative;
+}
+
+.qa-comparison-text .highlight {
+  user-select: none;
+}
+
+/* Temporary debugging styles */
+.qa-move-button {
+  position: fixed !important;
+  z-index: 99999 !important;
+  background-color: #4CAF50 !important;
+  color: white !important;
+  border: 2px solid #fff !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  min-width: 150px !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+}
