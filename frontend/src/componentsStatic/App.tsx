@@ -192,9 +192,13 @@ const App: React.FC = () => {
 
     let annotationKey = `${username}_annotations`;
 
-    if (currentMode === "QA Mode" || currentMode === "QA Comparison") {
+    if (currentMode === "QA Mode") {
       annotationKey = `${username}_qa`;
       packageHighlightedErrors['annotator'] = annotator;
+    } else if (currentMode === "QA Comparison") {
+      annotationKey = `finalized_annotations`;
+      packageHighlightedErrors['annotator'] = annotator;
+      packageHighlightedErrors['qa'] = username;
     }
     
     const requestBody = {
