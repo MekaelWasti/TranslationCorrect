@@ -11,6 +11,7 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { AnnotatorSelectorDropdown } from "./scoring/AnnotatorSelector";
 import QAComparisonContainer from "./qa/QAComparisonContainer";
+import { Span } from "../util/qaComparisonUtils";
 import logo from "../assets/logo.svg";
 
 // Type Definitions
@@ -69,6 +70,9 @@ const App: React.FC = () => {
     HighlightedError[]
   >([]);
   const [overallScore, setOverallScore] = React.useState<number>(50);
+  
+  // State for QA Comparison agreed spans
+  const [agreedSpans, setAgreedSpans] = useState<Span[]>([]);
 
   // console.log(curEntryIdx);
 
@@ -168,25 +172,45 @@ const App: React.FC = () => {
 
     console.log(username);
 
-    const packageHighlightedErrors = {
-      annotatedSpans: highlightedError.map(
-        ({
-          original_text: error_text_segment,
-          start_index_translation: start_index,
-          end_index_translation: end_index,
-          error_type,
-          error_severity,
-        }) => ({
-          error_text_segment,
-          start_index,
-          end_index,
-          error_type,
-          error_severity,
-        })
-      ),
-      overall_translation_score: overallScore,
-      corrected_sentence: modifiedText,
-    };
+    let packageHighlightedErrors;
+
+    if (currentMode === "QA Comparison") {
+      // Use agreed spans for QA Comparison mode
+      packageHighlightedErrors = {
+        annotatedSpans: agreedSpans.map(span => ({
+          error_text_segment: span.error_text_segment,
+          start_index: span.start_index,
+          end_index: span.end_index,
+          error_type: span.error_type,
+          error_severity: span.error_severity,
+        })),
+        overall_translation_score: overallScore,
+        corrected_sentence: modifiedText,
+        annotator: annotator,
+        qa: username,
+      };
+    } else {
+      // Use highlightedError for other modes
+      packageHighlightedErrors = {
+        annotatedSpans: highlightedError.map(
+          ({
+            original_text: error_text_segment,
+            start_index_translation: start_index,
+            end_index_translation: end_index,
+            error_type,
+            error_severity,
+          }) => ({
+            error_text_segment,
+            start_index,
+            end_index,
+            error_type,
+            error_severity,
+          })
+        ),
+        overall_translation_score: overallScore,
+        corrected_sentence: modifiedText,
+      };
+    }
 
     console.log(packageHighlightedErrors);
 
@@ -197,8 +221,7 @@ const App: React.FC = () => {
       packageHighlightedErrors['annotator'] = annotator;
     } else if (currentMode === "QA Comparison") {
       annotationKey = `finalized_annotations`;
-      packageHighlightedErrors['annotator'] = annotator;
-      packageHighlightedErrors['qa'] = username;
+      // annotator and qa are already set above for QA Comparison
     }
     
     const requestBody = {
@@ -437,7 +460,16 @@ const App: React.FC = () => {
             )}
 
             {/* QA Comparison Section - only show in QA Comparison mode */}
-            {currentMode === "QA Comparison" && <QAComparisonContainer sentenceData={sentenceData} sentenceID={sentenceID} annotator={annotator} username={username} machineTranslation={machineTranslation} />}
+            {currentMode === "QA Comparison" && (
+              <QAComparisonContainer 
+                sentenceData={sentenceData} 
+                sentenceID={sentenceID} 
+                annotator={annotator} 
+                username={username} 
+                machineTranslation={machineTranslation}
+                onAgreedSpansChange={setAgreedSpans}
+              />
+            )}
 
             {/* Translation Submission Section */}
             <div className="accept-translation-section">

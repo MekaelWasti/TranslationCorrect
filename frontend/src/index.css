@@ -1584,11 +1584,6 @@ select:hover {
   margin-bottom: 20px;
 }
 
-.qa-comparison-box:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
-}
-
 .qa-comparison-header {
   margin-bottom: 15px;
   padding-bottom: 8px;
@@ -1673,10 +1668,6 @@ select:hover {
   animation: qa-button-appear 0.3s ease-out;
 }
 
-.qa-move-button:hover {
-  animation: qa-button-pulse 1.5s infinite;
-}
-
 @keyframes qa-button-appear {
   from {
     opacity: 0;
@@ -1688,15 +1679,6 @@ select:hover {
   }
 }
 
-@keyframes qa-button-pulse {
-  0%, 100% {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  }
-  50% {
-    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
-  }
-}
-
 /* Enhanced QA comparison container for better interaction */
 .qa-comparison-container {
   position: relative;
@@ -1704,23 +1686,4 @@ select:hover {
 
 .qa-comparison-text .highlight {
   user-select: none;
-}
-
-/* Temporary debugging styles */
-.qa-move-button {
-  position: fixed !important;
-  z-index: 99999 !important;
-  background-color: #4CAF50 !important;
-  color: white !important;
-  border: 2px solid #fff !important;
-  padding: 8px 16px !important;
-  border-radius: 6px !important;
-  font-size: 14px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
-  min-width: 150px !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  display: block !important;
 }
