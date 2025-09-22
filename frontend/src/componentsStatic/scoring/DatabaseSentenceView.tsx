@@ -458,6 +458,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>Reference</th>
               <th>Annotation Done</th>
               {(currentMode === "QA Mode" || currentMode === "QA Comparison") && <th>QA Done</th>}
+              <th>Finalized</th>
             </tr>
           </thead>
           <tbody>
@@ -502,11 +503,25 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
                   </td>}
+                  <td className="status-cell">
+                    {item.annotations &&
+                    item.annotations.hasOwnProperty(
+                      "finalized_annotations"
+                    ) ? (
+                      <img
+                        className="annotation-checkmark"
+                        src={checkmark}
+                        alt=""
+                      />
+                    ) : (
+                      <img className="annotation-cross" src={cross} alt="" />
+                    )}
+                  </td>
                 </tr>
               ))
             ) : (
               <tr className="db-no-data-row">
-                <td className="db-no-data-cell" colSpan={5}>
+                <td className="db-no-data-cell" colSpan={7}>
                   <h3 className="db-no-data-text">
                     Please Select a Database Language...
                   </h3>
