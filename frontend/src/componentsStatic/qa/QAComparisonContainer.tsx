@@ -12,13 +12,16 @@ interface QAComparisonContainerProps {
   onAgreedSpansChange?: (spans: Span[]) => void;
 }
 
-// Custom HighlightedText component for QA comparison with span selection
+// Custom HighlightedText component for QA comparison with span selection and tooltip
 interface QAHighlightedTextProps {
   text: string;
   highlights: HighlightedError[];
   highlightKey: string;
   onSpanClick: (span: HighlightedError, spanIndex: number, event: React.MouseEvent) => void;
   selectedSpanIndex: number | null;
+  onSpanHover?: (span: HighlightedError, spanIndex: number, event: React.MouseEvent) => void;
+  onSpanMove?: (event: React.MouseEvent) => void;
+  onSpanLeave?: () => void;
 }
 
 const QAHighlightedText: React.FC<QAHighlightedTextProps> = ({
@@ -27,6 +30,9 @@ const QAHighlightedText: React.FC<QAHighlightedTextProps> = ({
   highlightKey,
   onSpanClick,
   selectedSpanIndex,
+  onSpanHover,
+  onSpanMove,
+  onSpanLeave,
 }) => {
   // Build ranges from highlights
   const ranges = highlights.map((highlight, idx) => {
@@ -71,6 +77,9 @@ const QAHighlightedText: React.FC<QAHighlightedTextProps> = ({
             position: "relative",
           }}
           onClick={(event) => onSpanClick(range.highlight, range.index, event)}
+          onMouseEnter={(event) => onSpanHover?.(range.highlight, range.index, event)}
+          onMouseMove={onSpanMove}
+          onMouseLeave={onSpanLeave}
         >
           {highlightedText}
         </span>
@@ -120,6 +129,13 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     left: number;
   } | null>(null);
 
+  // State for tooltip functionality
+  const [hoveredHighlight, setHoveredHighlight] = useState<HighlightedError | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+
   // Load data when component mounts or when sentence/annotator changes
   const loadComparisonData = useCallback(() => {
     const currentSentence = sentenceData.find((item: any) => item._id === sentenceID);
@@ -132,6 +148,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       setQACorrectedSentence(machineTranslation);
       setSelectedSpan(null);
       setMoveButtonPosition(null);
+      setHoveredHighlight(null);
+      setTooltipPosition(null);
       return;
     }
 
@@ -186,6 +204,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     // Clear selection when data changes
     setSelectedSpan(null);
     setMoveButtonPosition(null);
+    setHoveredHighlight(null);
+    setTooltipPosition(null);
   }, [sentenceData, sentenceID, annotator, username, machineTranslation]);
 
   useEffect(() => {
@@ -200,6 +220,27 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       error_type: span.error_type,
       error_severity: span.error_severity,
     }));
+  };
+
+  // Handle span hover for tooltip
+  const handleSpanHover = (span: HighlightedError, spanIndex: number, event: React.MouseEvent) => {
+    setHoveredHighlight(span);
+    
+    // Position tooltip under span
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    setTooltipPosition({
+      top: rect.bottom + 10, // Position below the span
+      left: rect.left + rect.width / 2 - 75,
+    });
+  };
+
+  const handleSpanMove = (event: React.MouseEvent) => {
+    // tooltip will stay in same position
+  };
+
+  const handleSpanLeave = () => {
+    setHoveredHighlight(null);
+    setTooltipPosition(null);
   };
 
   // Handle span click
@@ -220,10 +261,10 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       source: source,
     });
 
-    // Position the move button near the clicked span - use fixed positioning relative to viewport
+    // Position the move button
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const buttonPosition = {
-      top: rect.bottom + 5, // Position below the span with 10px gap
+      top: rect.top - 45, 
       left: rect.left + rect.width / 2 - 75, // Center the button horizontally relative to the span
     };
     
@@ -260,7 +301,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
   // Handle clicking outside to clear selection
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!(event.target as HTMLElement).closest('.qa-clickable-span, .qa-move-button')) {
+      if (!(event.target as HTMLElement).closest('.qa-clickable-span, .qa-move-button, .error-tooltip')) {
         setSelectedSpan(null);
         setMoveButtonPosition(null);
       }
@@ -269,6 +310,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     const handleScroll = () => {
       setSelectedSpan(null);
       setMoveButtonPosition(null);
+      setHoveredHighlight(null);
+      setTooltipPosition(null);
     };
 
     document.addEventListener('mousedown', handleClickOutside);
@@ -307,6 +350,9 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
               selectedSpanIndex={
                 selectedSpan?.source === "annotator" ? selectedSpan.index : null
               }
+              onSpanHover={handleSpanHover}
+              onSpanMove={handleSpanMove}
+              onSpanLeave={handleSpanLeave}
             />
           </div>
         </div>
@@ -331,6 +377,9 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
                 selectedSpanIndex={
                   selectedSpan?.source === "qa" ? selectedSpan.index : null
                 }
+                onSpanHover={handleSpanHover}
+                onSpanMove={handleSpanMove}
+                onSpanLeave={handleSpanLeave}
               />
             ) : (
               <p className="no-qa-message">
@@ -356,6 +405,9 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
                 highlightKey="end_index_translation"
                 onSpanClick={() => {}} // No click action for agreed spans
                 selectedSpanIndex={null}
+                onSpanHover={handleSpanHover}
+                onSpanMove={handleSpanMove}
+                onSpanLeave={handleSpanLeave}
               />
             ) : (
               <p className="no-qa-message">
@@ -365,6 +417,49 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Tooltip */}
+      {hoveredHighlight && tooltipPosition && (
+        <div 
+          className="error-tooltip" 
+          style={{
+            position: "fixed",
+            top: tooltipPosition.top,
+            left: tooltipPosition.left,
+            zIndex: 10000,
+            maxWidth: "300px",
+            whiteSpace: "wrap",
+          }}
+        >
+          <h3 style={{ 
+            color: colorMappings[hoveredHighlight.error_type],
+            margin: "0 0 4px 0",
+            fontSize: "18px",
+          }}>
+            Error Type: {hoveredHighlight.error_type}
+          </h3>
+          <div className="error-tooltip-text-display">
+            <p
+              style={{
+                color:
+                  hoveredHighlight.error_severity === "Minor"
+                    ? "#ffd000"
+                    : hoveredHighlight.error_severity === "Major"
+                    ? "orange"
+                    : "red",
+                margin: "2px 0",
+                fontSize: "16px"
+              }}
+            >
+              <strong style={{ color: "white" }}>Error Severity:</strong>{" "}
+              {hoveredHighlight.error_severity}
+            </p>
+            <p style={{ margin: "2px 0", fontSize: "16px" }}>
+              <strong>Original Text:</strong> {hoveredHighlight.original_text}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Move Button */}
       {selectedSpan && moveButtonPosition && (
@@ -400,27 +495,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
           Add to Agreed Spans
         </button>
       )}
-      
-      {/* Debug info */}
-      {selectedSpan && (
-        <div style={{
-          position: "fixed",
-          top: "10px",
-          right: "10px",
-          backgroundColor: "rgba(0,0,0,0.8)",
-          color: "white",
-          padding: "10px",
-          borderRadius: "5px",
-          zIndex: 10000,
-          fontSize: "12px"
-        }}>
-          Selected: {selectedSpan.source} span {selectedSpan.index}
-          <br />
-          Position: {moveButtonPosition ? `${moveButtonPosition.top}, ${moveButtonPosition.left}` : 'none'}
-        </div>
-      )}
     </div>
   );
 };
 
-export default QAComparisonContainer; 
+export default QAComparisonContainer;
