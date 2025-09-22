@@ -368,6 +368,18 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     }
   }
 
+  // Calculate dynamic colSpan based on current mode
+  const getColSpan = () => {
+    let baseCols = 5; 
+    if (currentMode === "QA Mode" || currentMode === "QA Comparison") {
+      baseCols += 1; // Add QA Done column
+    }
+    if (currentMode === "QA Comparison") {
+      baseCols += 1; // Add Finalized column
+    }
+    return baseCols;
+  };
+
   return (
     <div className="db-sentence-view-parent">
       <div>
@@ -458,7 +470,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
               <th>Reference</th>
               <th>Annotation Done</th>
               {(currentMode === "QA Mode" || currentMode === "QA Comparison") && <th>QA Done</th>}
-              <th>Finalized</th>
+              {currentMode === "QA Comparison" && <th>Finalized</th>}
             </tr>
           </thead>
           <tbody>
@@ -503,7 +515,7 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
                   </td>}
-                  <td className="status-cell">
+                  {currentMode === "QA Comparison" && <td className="status-cell">
                     {item.annotations &&
                     item.annotations.hasOwnProperty(
                       "finalized_annotations"
@@ -516,12 +528,12 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                     ) : (
                       <img className="annotation-cross" src={cross} alt="" />
                     )}
-                  </td>
+                  </td>}
                 </tr>
               ))
             ) : (
               <tr className="db-no-data-row">
-                <td className="db-no-data-cell" colSpan={7}>
+                <td className="db-no-data-cell" colSpan={getColSpan()}>
                   <h3 className="db-no-data-text">
                     Please Select a Database Language...
                   </h3>

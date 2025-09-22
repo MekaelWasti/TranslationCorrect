@@ -85,7 +85,20 @@ const App: React.FC = () => {
 
   const handleGoToLastAnnotation = () => {
     // Use different annotation keys based on mode
-    const annotationKey = (currentMode === "QA Mode" || currentMode === "QA Comparison") ? `${username}_qa` : `${username}_annotations`;
+    let annotationKey;
+    let modeText;
+    
+    if (currentMode === "QA Comparison") {
+      annotationKey = "finalized_annotations";
+      modeText = "finalized";
+    } else if (currentMode === "QA Mode") {
+      annotationKey = `${username}_qa`;
+      modeText = "QA-ed";
+    } else {
+      annotationKey = `${username}_annotations`;
+      modeText = "annotated";
+    }
+    
     const lastCompletedIndex = sentenceData
       .map((item, index) => ({
         index,
@@ -142,11 +155,9 @@ const App: React.FC = () => {
       setForceScroll(true);
       
       // Show success toast 
-      const modeText = (currentMode === "QA Mode" || currentMode === "QA Comparison") ? "QA-ed" : "annotated";
       toast.success(`Navigated to the next un${modeText} sentence`);
     } else {
       // Show info toast if no more unannotated sentences
-      const modeText = (currentMode === "QA Mode" || currentMode === "QA Comparison") ? "QA-ed" : "annotated";
       toast.info(`No more un${modeText} sentences found`);
     }
   };
@@ -267,11 +278,22 @@ const App: React.FC = () => {
         const currentIndex = sentenceData.findIndex(
           (item) => item._id === sentenceID
         );
+        
+        // Use different annotation keys based on mode for finding next sentence
+        let nextAnnotationKey;
+        if (currentMode === "QA Comparison") {
+          nextAnnotationKey = "finalized_annotations";
+        } else if (currentMode === "QA Mode") {
+          nextAnnotationKey = `${username}_qa`;
+        } else {
+          nextAnnotationKey = `${username}_annotations`;
+        }
+        
         const nextSentence = sentenceData
           .slice(currentIndex + 1)
           .find(
             (item) =>
-              !item.annotations || !item.annotations[annotationKey]
+              !item.annotations || !item.annotations[nextAnnotationKey]
           );
 
         if (nextSentence) {
@@ -404,7 +426,8 @@ const App: React.FC = () => {
                 className="go-to-last-annotated-button"
                 onClick={handleGoToLastAnnotation}
               >
-                {(currentMode === "QA Mode" || currentMode === "QA Comparison") ? "Go To Last QA-ed" : "Go To Last Annotated"}
+                {currentMode === "QA Comparison" ? "Go To Last Finalized" : 
+                 (currentMode === "QA Mode") ? "Go To Last QA-ed" : "Go To Last Annotated"}
               </button>
             </div>
             <div className="divider"></div>
