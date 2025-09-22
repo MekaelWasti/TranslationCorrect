@@ -9,6 +9,7 @@ interface QAComparisonContainerProps {
   annotator: string;
   username: string;
   machineTranslation: string;
+  onAgreedSpansChange?: (spans: Span[]) => void;
 }
 
 // Custom HighlightedText component for QA comparison with span selection
@@ -86,7 +87,11 @@ const QAHighlightedText: React.FC<QAHighlightedTextProps> = ({
     return elements;
   };
 
-  return <div>{getHighlightedText()}</div>;
+  return (
+    <div>
+      {getHighlightedText()}
+    </div>
+  );
 };
 
 const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
@@ -95,6 +100,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
   annotator,
   username,
   machineTranslation,
+  onAgreedSpansChange,
 }) => {
   const [annotationSpans, setAnnotationSpans] = useState<Span[]>([]);
   const [qaSpans, setQASpans] = useState<Span[]>([]);
@@ -198,18 +204,16 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
 
   // Handle span click
   const handleSpanClick = (span: HighlightedError, spanIndex: number, source: "annotator" | "qa", event: React.MouseEvent) => {
-    console.log("Span clicked!", { span, spanIndex, source, event }); // Debug log
     
     // Find the actual span object
     const sourceSpans = source === "annotator" ? annotationSpans : qaSpans;
     const actualSpan = sourceSpans[spanIndex];
     
     if (!actualSpan) {
-      console.log("No actual span found"); // Debug log
+      console.log("No actual span found"); 
       return;
     }
 
-    // Set selected span
     setSelectedSpan({
       span: actualSpan,
       index: spanIndex,
@@ -219,11 +223,10 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     // Position the move button near the clicked span - use fixed positioning relative to viewport
     const rect = (event.target as HTMLElement).getBoundingClientRect();
     const buttonPosition = {
-      top: rect.bottom + 10, // Position below the span with 10px gap
+      top: rect.bottom + 5, // Position below the span with 10px gap
       left: rect.left + rect.width / 2 - 75, // Center the button horizontally relative to the span
     };
     
-    console.log("Button position:", buttonPosition); // Debug log
     setMoveButtonPosition(buttonPosition);
   };
 
@@ -234,7 +237,13 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     const { span, index, source } = selectedSpan;
 
     // Add to shared spans
-    setSharedSpans(prev => [...prev, span]);
+    const newSharedSpans = [...sharedSpans, span];
+    setSharedSpans(newSharedSpans);
+
+    // Notify parent component of the change
+    if (onAgreedSpansChange) {
+      onAgreedSpansChange(newSharedSpans);
+    }
 
     // Remove from source spans
     if (source === "annotator") {
@@ -257,11 +266,26 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       }
     };
 
+    const handleScroll = () => {
+      setSelectedSpan(null);
+      setMoveButtonPosition(null);
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScroll);
+    
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, []);
+
+  // Notify parent when shared spans are loaded initially
+  useEffect(() => {
+    if (onAgreedSpansChange) {
+      onAgreedSpansChange(sharedSpans);
+    }
+  }, [sharedSpans, onAgreedSpansChange]);
 
   return (
     <div className="qa-comparison-container">
