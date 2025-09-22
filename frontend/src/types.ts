@@ -41,4 +41,5 @@ export const colorMappings: { [key: string]: string } = {
   Spelling: "#9B59B6",
   Typography: "#1ABC9C",
   Unintelligible: "#F39C12",
+  Register: "#3F51B5",
 };
