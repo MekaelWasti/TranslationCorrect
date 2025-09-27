@@ -503,9 +503,8 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
                   </td>
                   {(currentMode === "QA Mode" || currentMode === "QA Comparison") && <td className="status-cell">
                     {item.annotations &&
-                    item.annotations.hasOwnProperty(
-                      `${username}_qa`
-                    ) ? (
+                    item.annotations.hasOwnProperty(`${username}_qa`) &&
+                    item.annotations[`${username}_qa`].annotator === annotator ? (
                       <img
                         className="annotation-checkmark"
                         src={checkmark}
