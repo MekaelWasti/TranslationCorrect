@@ -115,11 +115,14 @@ const App: React.FC = () => {
       setDiffContent(lastUnannotatedSentence.mt);
       setSentenceID(lastUnannotatedSentence._id);
       setModifiedText(lastUnannotatedSentence.mt);
-      
-      // Check if there are existing annotations for this sentence and annotator
-      if ((currentMode === "QA Mode" || currentMode === "QA Comparison") && annotator && lastUnannotatedSentence.annotations && lastUnannotatedSentence.annotations[`${annotator}_annotations`]) {
-        // Load existing annotation spans
-        const prev_annotation = lastUnannotatedSentence.annotations[`${annotator}_annotations`];
+
+      const which_annotator = currentMode === "QA Comparison" ? annotator : username;
+      if (
+        which_annotator &&
+        lastUnannotatedSentence.annotations &&
+        lastUnannotatedSentence.annotations[`${which_annotator}_annotations`]
+      ) {
+        const prev_annotation = lastUnannotatedSentence.annotations[`${which_annotator}_annotations`];
         const modified_spans = prev_annotation.annotatedSpans.map(span => ({
           ...span,
           original_text: span.error_text_segment,
@@ -346,15 +349,18 @@ const App: React.FC = () => {
         // Update sentenceData row for live staus update
         console.log("AH", packageHighlightedErrors);
         setSentenceData((prevData) => {
-          return prevData.map((row) =>
-            row._id === sentenceID
-              ? {
-                  ...row,
-                  annotations: { [annotationKey]: packageHighlightedErrors },
-                }
-              : row
-          );
-        });
+        return prevData.map((row) =>
+          row._id === sentenceID
+            ? {
+                ...row,
+                annotations: {
+                  ...row.annotations,
+                  [annotationKey]: packageHighlightedErrors,
+                },
+              }
+            : row
+        );
+      });
       })
       .catch((error) => {
         console.error("Error:", error);
