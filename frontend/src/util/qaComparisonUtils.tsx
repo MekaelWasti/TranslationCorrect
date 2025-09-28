@@ -95,9 +95,9 @@ export const getSpanDiffs = (
 };
 
 export const getSharedSpansSentence = (
-  mt: String,
+  mt: string,
   sharedSpans: Span[]
-): String => {
+): string => {
 
   let newSentence = mt;
   sortSpans(sharedSpans);
