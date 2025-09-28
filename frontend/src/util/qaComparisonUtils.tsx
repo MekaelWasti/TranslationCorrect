@@ -2,29 +2,32 @@ export interface Span {
     start_index: number;
     end_index: number;
     error_text_segment: string;
-    error_type: string;       
-    error_severity: string;   
+    error_type: string;
+    error_severity: string;
 }
   
 export const getSpanDiffs = (
-  annotationSpans: Span[],
-  qaSpans: Span[]
+  aSpans: Span[],
+  qSpans: Span[]
 ): [Span[], Span[], Span[]] => {
   const annotationRemainderSpans: Span[] = [];
   const qaRemainderSpans: Span[] = [];
   const sharedSpans: Span[] = [];
 
-  const annotationSpansCopy = copySpanArr(annotationSpans);
-  const qaSpansCopy = copySpanArr(qaSpans);
+  const annotationSpans = copySpanArr(aSpans);
+  const qaSpans = copySpanArr(aSpans);
 
-  sortSpans(annotationSpansCopy);
-  sortSpans(qaSpansCopy);
+  sortSpans(annotationSpans);
+  sortSpans(qaSpans);
 
-  adjustIndices(annotationSpansCopy, qaSpansCopy);
+  const adjustedAnnotationSpans = copySpanArr(annotationSpans);
+  const adjustedQaSpans = copySpanArr(qaSpans);
+
+  adjustIndices(adjustedAnnotationSpans, adjustedQaSpans);
   
-  while (annotationSpansCopy.length > 0 && qaSpansCopy.length > 0) {
-    const annotationSpan = annotationSpansCopy[0];
-    const qaSpan = qaSpansCopy[0];
+  while (adjustedAnnotationSpans.length > 0 && adjustedQaSpans.length > 0) {
+    const annotationSpan = adjustedAnnotationSpans[0];
+    const qaSpan = adjustedQaSpans[0];
 
       // Spans in the same location
     if (annotationSpan.start_index === qaSpan.start_index) {
@@ -35,29 +38,57 @@ export const getSpanDiffs = (
         annotationSpan.error_severity === qaSpan.error_severity
       ) {
         sharedSpans.push(annotationSpan);
-        annotationSpansCopy.shift();
-        qaSpansCopy.shift();
+        annotationSpans.shift()!;
+        qaSpans.shift()!;
+        adjustedAnnotationSpans.shift()!;
+        adjustedQaSpans.shift()!;
       } else {
         // Same location, but different details
-        annotationRemainderSpans.push(annotationSpansCopy.shift()!);
-        qaRemainderSpans.push(qaSpansCopy.shift()!);
+        annotationRemainderSpans.push(annotationSpans.shift()!);
+        qaRemainderSpans.push(qaSpans.shift()!);
+        adjustedAnnotationSpans.shift()!;
+        adjustedQaSpans.shift()!;
       }
     } else {
       // Different locations, keep the earlier one
       if (annotationSpan.start_index < qaSpan.start_index) {
-        annotationRemainderSpans.push(annotationSpansCopy.shift()!);
+        annotationRemainderSpans.push(annotationSpans.shift()!);
+        adjustedAnnotationSpans.shift()!;
       } else {
-        qaRemainderSpans.push(qaSpansCopy.shift()!);
+        qaRemainderSpans.push(qaSpans.shift()!);
+        adjustedQaSpans.shift()!;
       }
     }
   }
 
   // Handle leftovers if one list still has items
-  if (annotationSpansCopy.length > 0) {
-    annotationRemainderSpans.push(...annotationSpansCopy);
+  if (annotationSpans.length > 0) {
+    annotationRemainderSpans.push(...annotationSpans);
   }
-  if (qaSpansCopy.length > 0) {
-    qaRemainderSpans.push(...qaSpansCopy);
+  if (qaSpans.length > 0) {
+    qaRemainderSpans.push(...qaSpans);
+  }
+
+  // sharedSpans indices are shifted/adjusted, so we need to readjust them to
+  // make sense by removing any offset caused by omission spans in
+  // annotationRemainderSpans or qaRemainderSpans
+
+  const annotationRemainderOmissions = copySpanArr(getOmissionSpans(annotationRemainderSpans));
+  const qaRemainderOmissions = copySpanArr(getOmissionSpans(qaRemainderSpans));
+
+  const leftoverOmissions = [...annotationRemainderOmissions, ...qaRemainderOmissions];
+  sortSpans(leftoverOmissions);
+
+  while (leftoverOmissions.length > 0) {
+    const omission = leftoverOmissions.pop();
+    for (const sharedSpan of sharedSpans) {
+      const offset = omission.end_index - omission.start_index;
+      // Need to remove offset caused by omission span that's not in sharedSpans
+      if (omission.start_index < sharedSpan.start_index) {
+        sharedSpan.start_index -= offset;
+        sharedSpan.end_index -= offset;
+      }
+    }
   }
 
   return [annotationRemainderSpans, qaRemainderSpans, sharedSpans];
@@ -107,7 +138,7 @@ const adjustIndicesHelper = (span1: Span, arr2: Span[]): void => {
       span2.end_index += span1Length;
     }
   }
-};  
+};
 
 const getOmissionSpans = (spans: Span[]): Span[] => {
   let omissionSpans: Span[] = [];
