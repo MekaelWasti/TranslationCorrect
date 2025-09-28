@@ -94,6 +94,24 @@ export const getSpanDiffs = (
   return [annotationRemainderSpans, qaRemainderSpans, sharedSpans];
 };
 
+export const getSharedSpansSentence = (
+  mt: String,
+  sharedSpans: Span[]
+): String => {
+
+  let newSentence = mt;
+  sortSpans(sharedSpans);
+
+  for (const span of sharedSpans) {
+    if (span.error_type === "Omission") {
+      newSentence = newSentence.slice(0, span.start_index)
+                    + span.error_text_segment
+                    + newSentence.slice(span.start_index);
+    }
+  }
+  return newSentence;
+}
+
 const adjustIndices = (arr1: Span[], arr2: Span[]): void => {
 
   // Something weird happens if we don't call copySpanArr, my working theory
