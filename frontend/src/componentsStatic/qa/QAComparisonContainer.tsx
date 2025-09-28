@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getSpanDiffs, Span } from "../../util/qaComparisonUtils";
+import { getSharedSpansSentence, getSpanDiffs, Span } from "../../util/qaComparisonUtils";
 import { HighlightedError, colorMappings } from "../../types";
 import "../../index.css";
 
@@ -147,6 +147,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
       setHasQAForAnnotator(false);
       setAnnotatorCorrectedSentence(machineTranslation);
       setQACorrectedSentence(machineTranslation);
+      setSharedSpansSentence(machineTranslation);
       setSelectedSpan(null);
       setMoveButtonPosition(null);
       setHoveredHighlight(null);
@@ -197,6 +198,8 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
 
     // Use getSpanDiffs to compare spans
     const [annotationRemainder, qaRemainder, shared] = getSpanDiffs(annotatorSpans, qaUserSpans);
+
+    setSharedSpansSentence(getSharedSpansSentence(machineTranslation, shared));
 
     setAnnotationSpans(annotationRemainder);
     setQASpans(qaRemainder);
@@ -401,7 +404,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
           <div className="qa-comparison-text">
             {hasQAForAnnotator ? (
               <QAHighlightedText
-                text={machineTranslation}
+                text={sharedSpansSentence}
                 highlights={convertSpansToHighlightedErrors(sharedSpans)}
                 highlightKey="end_index_translation"
                 onSpanClick={() => {}} // No click action for agreed spans
