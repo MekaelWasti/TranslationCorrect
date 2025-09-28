@@ -15,7 +15,7 @@ export const getSpanDiffs = (
   const sharedSpans: Span[] = [];
 
   const annotationSpans = copySpanArr(aSpans);
-  const qaSpans = copySpanArr(aSpans);
+  const qaSpans = copySpanArr(qSpans);
 
   sortSpans(annotationSpans);
   sortSpans(qaSpans);

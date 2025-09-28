@@ -117,6 +117,7 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
   const [hasQAForAnnotator, setHasQAForAnnotator] = useState<boolean>(false);
   const [annotatorCorrectedSentence, setAnnotatorCorrectedSentence] = useState<string>(machineTranslation);
   const [qaCorrectedSentence, setQACorrectedSentence] = useState<string>(machineTranslation);
+  const [sharedSpansSentence, setSharedSpansSentence] = useState<string>(machineTranslation);
 
   // State for span selection and move functionality
   const [selectedSpan, setSelectedSpan] = useState<{
