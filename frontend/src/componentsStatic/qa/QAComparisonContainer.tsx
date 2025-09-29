@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { getSharedSpansSentence, getSpanDiffs, Span } from "../../util/qaComparisonUtils";
+import { copySpanArr, adjustMovingSpanIndices, getSharedSpansSentence, getSpanDiffs, Span } from "../../util/qaComparisonUtils";
 import { HighlightedError, colorMappings } from "../../types";
 import "../../index.css";
 
@@ -119,6 +119,10 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
   const [qaCorrectedSentence, setQACorrectedSentence] = useState<string>(machineTranslation);
   const [sharedSpansSentence, setSharedSpansSentence] = useState<string>(machineTranslation);
 
+  // Used when moving spans to sharedSpans
+  const [originalAnnotationSpans, setOriginalAnnotationSpans] = useState<Span[]>([]);
+  const [originalQaSpans, setOriginalQaSpans] = useState<Span[]>([]);
+
   // State for span selection and move functionality
   const [selectedSpan, setSelectedSpan] = useState<{
     span: Span;
@@ -170,6 +174,9 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     const annotatorCorrected = annotatorAnnotation?.corrected_sentence || machineTranslation;
     setAnnotatorCorrectedSentence(annotatorCorrected);
 
+    // Update Original Annotation Spans
+    setOriginalAnnotationSpans(copySpanArr(annotatorSpans));
+
     // Get QA user spans
     const qaKey = `${username}_qa`;
     const qaAnnotation = currentSentence.annotations?.[qaKey];
@@ -195,6 +202,9 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
 
     setQACorrectedSentence(qaCorrected);
     setHasQAForAnnotator(hasQA);
+
+    // Update Original QA Spans
+    setOriginalQaSpans(copySpanArr(qaUserSpans));
 
     // Use getSpanDiffs to compare spans
     const [annotationRemainder, qaRemainder, shared] = getSpanDiffs(annotatorSpans, qaUserSpans);
@@ -280,8 +290,27 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
     if (!selectedSpan) return;
 
     const { span, index, source } = selectedSpan;
+    const sourceSpans = source === "annotator" ? originalAnnotationSpans : originalQaSpans;
 
-    // Add to shared spans
+    // Span indices need to be modified to fit sharedSpansSentence
+    adjustMovingSpanIndices(sourceSpans, sharedSpans, span);
+
+    // If selectedSpan is an omission span, modify sharedSpans and the sentence
+    if (span.error_type === "Omission") {
+      for (const sharedSpan of sharedSpans) {
+        const offset = span.end_index - span.start_index;
+        if (span.start_index <= sharedSpan.start_index) {
+          sharedSpan.start_index += offset;
+          sharedSpan.end_index += offset;
+        }
+      }
+    }
+    const newSentence = sharedSpansSentence.slice(0, span.start_index) +
+                        span.error_text_segment +
+                        sharedSpansSentence.slice(span.start_index);
+    setSharedSpansSentence(newSentence);
+
+    // Add to sharedSpans
     const newSharedSpans = [...sharedSpans, span];
     setSharedSpans(newSharedSpans);
 
