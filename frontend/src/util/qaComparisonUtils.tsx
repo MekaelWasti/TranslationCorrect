@@ -155,10 +155,22 @@ const adjustIndices = (arr1: Span[], arr2: Span[]): void => {
       adjustIndicesHelper(a1OmissionSpans.shift(), arr2);
 
     // Both sets have an omission span in the same location
-    } else if (a1OmissionSpans[0].start_index == a2OmissionSpans[0].start_index &&
-                a1OmissionSpans[0].end_index == a2OmissionSpans[0].end_index) {
-      a1OmissionSpans.shift();
-      a2OmissionSpans.shift();
+    } else if (a1OmissionSpans[0].start_index == a2OmissionSpans[0].start_index) {
+      // Same start_index and end_index, same length omission span
+      if (a1OmissionSpans[0].end_index == a2OmissionSpans[0].end_index) {
+        a1OmissionSpans.shift();
+        a2OmissionSpans.shift();
+      
+      // Different end_index, we put one in front of the other.
+      // If we don't put one in front of the other, the offsetting of the spans
+      // will be off.
+      // We'll put the a1 span in from of the a2 span
+      } else {
+        const span: Span = a1OmissionSpans.shift();
+
+        adjustIndicesHelper(span, arr2);
+        adjustIndicesHelper(span, a2OmissionSpans);
+      }
 
     } else if (a1OmissionSpans[0].start_index < a2OmissionSpans[0].start_index) {
       const span: Span = a1OmissionSpans.shift();
