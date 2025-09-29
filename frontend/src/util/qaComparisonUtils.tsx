@@ -112,6 +112,31 @@ export const getSharedSpansSentence = (
   return newSentence;
 }
 
+export const adjustMovingSpanIndices = (
+  sourceSpans: Span[],
+  sharedSpans: Span[],
+  span: Span
+): void => {
+  const sourceOmissions = copySpanArr(getOmissionSpans(sourceSpans));
+  const sharedOmissions = copySpanArr(getOmissionSpans(sharedSpans));
+
+  for (const omissionSpan of sourceOmissions) {
+    if (omissionSpan.start_index < span.start_index) {
+      let offset = omissionSpan.end_index - omissionSpan.start_index;
+      span.start_index -= offset;
+      span.end_index -= offset;
+    }
+  }
+
+  for (const omissionSpan of sharedOmissions) {
+    if (omissionSpan.start_index <= span.start_index) {
+      let offset = omissionSpan.end_index - omissionSpan.start_index;
+      span.start_index += offset;
+      span.end_index += offset;
+    }
+  }
+}
+
 const adjustIndices = (arr1: Span[], arr2: Span[]): void => {
 
   // Something weird happens if we don't call copySpanArr, my working theory
@@ -178,7 +203,7 @@ const sortSpans = (spans: Span[]): void => {
   }
 };
 
-const copySpanArr = (spans: Span[]): Span[] => {
+export const copySpanArr = (spans: Span[]): Span[] => {
   let spansCopy: Span[] = [];
   for (let span of spans) {
       let spanCopy: Span = {
