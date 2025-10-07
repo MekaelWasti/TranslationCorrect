@@ -303,6 +303,14 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
     console.log(language);
     setActiveLanguage(language);
 
+    // Clear current sentence state when switching languages
+    setOrigText("Please select a sentence to annotate from the database.");
+    setTranslatedText("Please select a sentence to annotate from the database.");
+    setDiffContent("Please select a sentence to annotate from the database.");
+    setModifedText("Please select a sentence to annotate from the database.");
+    setSentenceID("undefined_id");
+    setAddedErrorSpans([]);
+    setHighlightedError([]);
     if (!dataset) {
       console.error("Dataset is undefined");
     } else if (language === "Mandarin") {
@@ -347,6 +355,11 @@ export const DatabaseSentenceView: React.FC<DatabaseSentenceViewProps> = ({
   useEffect(() => {
     noFunnyBusiness();
   }, [currentMode]);
+
+  // Effect to handle language changes
+  useEffect(() => {
+    noFunnyBusiness();
+  }, [activeLanguage]);
   const noFunnyBusiness = () => {
     // In Annotation Mode, the annotator should be the current user
     if (currentMode !== "QA Mode" && currentMode !== "QA Comparison") {
