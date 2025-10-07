@@ -100,16 +100,36 @@ const App: React.FC = () => {
     }
     
     const lastCompletedIndex = sentenceData
-      .map((item, index) => ({
-        index,
-        completed: item.annotations && item.annotations[annotationKey],
-      }))
+      .map((item, index) => {
+        if (!item.annotations || !item.annotations[annotationKey]) {
+          return { index, completed: false };
+        }
+        
+        let isCompleted = false;
+        if (currentMode === "QA Comparison") {
+          isCompleted = item.annotations[annotationKey].qa === username;
+        } else if (currentMode === "QA Mode") {
+          isCompleted = item.annotations[annotationKey].annotator === annotator;
+        } else {
+          // Annotation Mode - just needs to exist
+          isCompleted = true;
+        }
+        
+        return { index, completed: isCompleted };
+      })
       .reverse()
       .find((item) => item.completed);
 
     if (lastCompletedIndex) {
       const lastUnannotatedSentence =
         sentenceData[lastCompletedIndex.index + 1];
+      
+      // Check if the next sentence exists
+      if (!lastUnannotatedSentence) {
+        toast.info(`You've reached the end of the dataset! No more un${modeText} sentences found.`);
+        return;
+      }
+      
       setOrigText(lastUnannotatedSentence.src);
       setTranslatedText(lastUnannotatedSentence.mt);
       setDiffContent(lastUnannotatedSentence.mt);
@@ -296,7 +316,9 @@ const App: React.FC = () => {
           .slice(currentIndex + 1)
           .find(
             (item) =>
-              !item.annotations || !item.annotations[nextAnnotationKey]
+              !item.annotations || !item.annotations[nextAnnotationKey] ||
+              (currentMode === "QA Comparison" && 
+               item.annotations[nextAnnotationKey].qa !== username)
           );
 
         if (nextSentence) {
