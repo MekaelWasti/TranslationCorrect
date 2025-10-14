@@ -117,7 +117,9 @@ export const adjustMovingSpanIndices = (
   sharedSpans: Span[],
   span: Span
 ): void => {
-  const sourceOmissions = copySpanArr(getOmissionSpans(sourceSpans));
+  // When removing omission offsets, we need to reverse from right to left from
+  // the omission spans. When adding offsets, we offset from left to right.
+  const sourceOmissions = copySpanArr(getOmissionSpans(sourceSpans)).reverse();
   const sharedOmissions = copySpanArr(getOmissionSpans(sharedSpans));
 
   for (const omissionSpan of sourceOmissions) {
