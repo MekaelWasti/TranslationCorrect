@@ -303,12 +303,12 @@ const QAComparisonContainer: React.FC<QAComparisonContainerProps> = ({
           sharedSpan.start_index += offset;
           sharedSpan.end_index += offset;
         }
+        const newSentence = sharedSpansSentence.slice(0, span.start_index) +
+                            span.error_text_segment +
+                            sharedSpansSentence.slice(span.start_index);
+        setSharedSpansSentence(newSentence);
       }
     }
-    const newSentence = sharedSpansSentence.slice(0, span.start_index) +
-                        span.error_text_segment +
-                        sharedSpansSentence.slice(span.start_index);
-    setSharedSpansSentence(newSentence);
 
     // Add to sharedSpans
     const newSharedSpans = [...sharedSpans, span];
