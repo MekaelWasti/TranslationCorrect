@@ -250,6 +250,30 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+
+    if (!editableDivRef.current) return;
+
+    const start = getSelectionStartOffset(editableDivRef.current);
+    const end = getCaretCharacterOffsetWithin(editableDivRef.current);
+
+    const newText =
+      modifiedText.slice(0, start) + text + modifiedText.slice(end);
+
+    // Update caretRef to point to end of pasted text
+    caretOffsetRef.current = start + text.length;
+    
+    // Trigger update sequence
+    generateDiff(
+      machineTranslation,
+      newText,
+      setModifiedText,
+      onDiffTextUpdate
+    );
+  };
+
   const applyHighlight = () => {
     setHighlightInserted(true);
     const selection = window.getSelection();
@@ -392,13 +416,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     };
   }, [debouncedHandleInput]);
 
-  // Restore caret after re-render.
+  // After modifiedText updates (and the re-render completes), restore the caret position.
   useEffect(() => {
     if (editableDivRef.current) {
-      // Set plain text content instead of letting React render components
-      if (editableDivRef.current.textContent !== modifiedText) {
-        editableDivRef.current.textContent = modifiedText;
-      }
       setCaretPosition(editableDivRef.current, caretOffsetRef.current);
     }
   }, [modifiedText]);
@@ -482,8 +502,14 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           contentEditable
           suppressContentEditableWarning
           onMouseUp={handleReactMouseUp}
+          onPaste={handlePaste}
         >
-          {/* Plain text only - no React components to avoid duplication on paste */}
+          <HighlightedText
+            text={modifiedText}
+            highlights={errorSpans}
+            highlightKey="end_index_translation"
+            highlightInserted={highlightInserted}
+          />
         </div>
         <button
           className={`insert-span-popup-button ${
