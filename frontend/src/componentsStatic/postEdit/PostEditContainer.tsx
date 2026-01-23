@@ -395,13 +395,10 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   // Restore caret after re-render.
   useEffect(() => {
     if (editableDivRef.current) {
-      setCaretPosition(editableDivRef.current, caretOffsetRef.current);
-    }
-  }, [modifiedText]);
-
-  // After modifiedText updates (and the re-render completes), restore the caret position.
-  useEffect(() => {
-    if (editableDivRef.current) {
+      // Set plain text content instead of letting React render components
+      if (editableDivRef.current.textContent !== modifiedText) {
+        editableDivRef.current.textContent = modifiedText;
+      }
       setCaretPosition(editableDivRef.current, caretOffsetRef.current);
     }
   }, [modifiedText]);
@@ -486,12 +483,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           suppressContentEditableWarning
           onMouseUp={handleReactMouseUp}
         >
-          <HighlightedText
-            text={modifiedText}
-            highlights={errorSpans}
-            highlightKey="end_index_translation"
-            highlightInserted={highlightInserted}
-          />
+          {/* Plain text only - no React components to avoid duplication on paste */}
         </div>
         <button
           className={`insert-span-popup-button ${
