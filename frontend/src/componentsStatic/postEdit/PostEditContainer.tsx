@@ -250,6 +250,30 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+
+    if (!editableDivRef.current) return;
+
+    const start = getSelectionStartOffset(editableDivRef.current);
+    const end = getCaretCharacterOffsetWithin(editableDivRef.current);
+
+    const newText =
+      modifiedText.slice(0, start) + text + modifiedText.slice(end);
+
+    // Update caretRef to point to end of pasted text
+    caretOffsetRef.current = start + text.length;
+    
+    // Trigger update sequence
+    generateDiff(
+      machineTranslation,
+      newText,
+      setModifiedText,
+      onDiffTextUpdate
+    );
+  };
+
   const applyHighlight = () => {
     setHighlightInserted(true);
     const selection = window.getSelection();
@@ -392,13 +416,6 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     };
   }, [debouncedHandleInput]);
 
-  // Restore caret after re-render.
-  useEffect(() => {
-    if (editableDivRef.current) {
-      setCaretPosition(editableDivRef.current, caretOffsetRef.current);
-    }
-  }, [modifiedText]);
-
   // After modifiedText updates (and the re-render completes), restore the caret position.
   useEffect(() => {
     if (editableDivRef.current) {
@@ -485,6 +502,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           contentEditable
           suppressContentEditableWarning
           onMouseUp={handleReactMouseUp}
+          onPaste={handlePaste}
         >
           <HighlightedText
             text={modifiedText}
