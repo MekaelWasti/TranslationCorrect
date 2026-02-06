@@ -1,14 +1,13 @@
 import {
   DIFF_DELETE,
   DIFF_INSERT,
-  DIFF_EQUAL,
   diff_match_patch,
 } from "diff-match-patch";
 import React, { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import "../../index.css";
 import { useSpanEvalContext } from "../SpanEvalProvider";
 import { SpanScoreDropdown } from "../scoring/SpanScoreDropdown";
-import { BaseEditor, createEditor, Descendant, Editor, Node as SlateNode, Range, Text, Transforms } from "slate";
+import { BaseEditor, createEditor, Descendant, Editor, Node as SlateNode, Range, Text} from "slate";
 import { Slate, Editable, ReactEditor, RenderLeafProps, withReact } from "slate-react";
 import { HistoryEditor, withHistory } from "slate-history";
 import { HighlightedError, colorMappings } from "../../types";
@@ -36,11 +35,9 @@ declare module "slate" {
 type PostEditContainerProps = {
   currentMode?: "Annotation Mode" | "QA Mode" | "QA Comparison";
   machineTranslation: string;
-  setMachineTranslation: (newTranslation: string) => void;
   onDiffTextUpdate: (newDiffText: React.ReactNode) => void;
   modifiedText: string;
   setModifiedText: (newText: string) => void;
-  diffContent: React.ReactNode;
   setDiffContent: (newDiffContent: React.ReactNode) => void;
 };
 
@@ -95,7 +92,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   const lastEmittedText = useRef<string | null>(null); // Track last text emitted to parent to prevent echo loops
   const lastEmittedSpans = useRef<HighlightedError[] | null>(null); // Track last spans emitted to parent
   const updateTimeoutRef = useRef<number | null>(null); // Debounce timeout for span updates
-  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans, setErrorSpans, updateSpanErrorType, updateSpanSeverity, setSpanSeverity } = useSpanEvalContext();
+  const hoverTimeoutRef = useRef<number | null>(null); // Timeout for hover state cleanup
+  const deleteTimeoutRef = useRef<number | null>(null); // Timeout for delete animation
+  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans, setErrorSpans, updateSpanErrorType, setSpanSeverity } = useSpanEvalContext();
   
   // Local optimistic state for spans to ensure synchronous updates with text editing
   const [internalSpans, setInternalSpans] = useState<HighlightedError[]>(errorSpans || []);
@@ -115,6 +114,23 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
         };
     }
   }, [modifiedText, errorSpans]);
+
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = null;
+      }
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+      if (deleteTimeoutRef.current) {
+        clearTimeout(deleteTimeoutRef.current);
+        deleteTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   const [value, setValue] = useState<Descendant[]>([
     {
@@ -228,7 +244,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       lastEmittedSpans.current = updatedSpans;
       // generateDiff calls setModifiedText internally, but we've already updated the spans and text state.
       // We call it here to generate the visual diff elements for the UI.
-      generateDiff(machineTranslation, newText, () => {}, onDiffTextUpdate);
+      generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);
     },
     [
       editor, // changes in editor ref are rare but operation access needs it
@@ -247,12 +263,9 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       if (newText !== modifiedText) {
         isInternalEditRef.current = true;
         updateSpansForTextChange(newText);
-        // Reset the flag after a meaningful delay to ensure the parent update / effect cycle completes.
-        // 500ms should be enough to cover slow React render cycles or async prop updates
-        if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
-        updateTimeoutRef.current = window.setTimeout(() => {
+        Promise.resolve().then(() => {
           isInternalEditRef.current = false;
-        }, 500);
+        });
       }
     },
     [editor, modifiedText, updateSpansForTextChange]
@@ -263,11 +276,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     const selection = editor.selection;
     if (!selection || Range.isCollapsed(selection)) return;
 
-    const [startPoint, endPoint] = Range.edges(selection);
-    const start = Math.min(startPoint.offset, endPoint.offset);
-    const end = Math.max(startPoint.offset, endPoint.offset);
+    const [startPoint] = Range.edges(selection);
+    const textBeforeRange = Editor.range(editor, Editor.start(editor, []), startPoint);
+    const start = Editor.string(editor, textBeforeRange).length;
     const selectedText = Editor.string(editor, selection);
     if (!selectedText.trim()) return;
+    const end = start + selectedText.length;
 
     const original_text = selectedText;
     addNewErrorSpan(
@@ -410,7 +424,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   };
 
   const handleMouseLeaveSpan = () => {
-    setTimeout(() => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = window.setTimeout(() => {
       if (
         !document.querySelector(".delete-span-button:hover") &&
         !document.querySelector(".highlight:hover")
@@ -481,7 +496,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     const button = e.currentTarget;
     button.style.transform = "scale(0.9)";
     button.style.opacity = "0.8";
-    setTimeout(() => {
+    if (deleteTimeoutRef.current) clearTimeout(deleteTimeoutRef.current);
+    deleteTimeoutRef.current = window.setTimeout(() => {
       deleteErrorSpan(idx);
       setDeleteButtonVisible(false);
       setHoveredHighlight(null);
@@ -499,36 +515,32 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     }, 250);
   };
 
-  const renderLeaf = useCallback(
-    ({ attributes, children, leaf }: RenderLeafProps) => {
-      if (!leaf.isHighlight) {
-        return <span {...attributes}>{children}</span>;
-      }
-
-      return (
-        <span
-          {...attributes}
-          className={`highlight ${
-            selectedHighlightIdx === leaf.highlightIndex ? "highlight-selected" : ""
-          }`}
-          style={{
-            backgroundColor: colorMappings[leaf.highlight.error_type],
-          }}
-          data-highlight-index={leaf.highlightIndex}
-          onMouseEnter={(e) =>
-            handleMouseEnterSpan(e, leaf.highlight, leaf.highlightIndex)
-          }
-          onMouseLeave={handleMouseLeaveSpan}
-          onMouseMove={handleMouseMove}
-          onMouseDown={(e) => handleMouseClick(e, leaf.highlight, leaf.highlightIndex)}
-          onContextMenu={(e) => e.preventDefault()}
-        >
-          {children}
-        </span>
-      );
-    },
-    [handleMouseClick, handleMouseEnterSpan, handleMouseLeaveSpan, handleMouseMove, selectedHighlightIdx]
-  );
+  const renderLeaf = ({ attributes, children, leaf }: RenderLeafProps) => {
+    if (!leaf.isHighlight) {
+      return <span {...attributes}>{children}</span>;
+    }
+    return (
+      <span
+        {...attributes}
+        className={`highlight ${
+          selectedHighlightIdx === leaf.highlightIndex ? "highlight-selected" : ""
+        }`}
+        style={{
+          backgroundColor: colorMappings[leaf.highlight.error_type],
+        }}
+        data-highlight-index={leaf.highlightIndex}
+        onMouseEnter={(e) =>
+          handleMouseEnterSpan(e, leaf.highlight, leaf.highlightIndex)
+        }
+        onMouseLeave={handleMouseLeaveSpan}
+        onMouseMove={handleMouseMove}
+        onMouseDown={(e) => handleMouseClick(e, leaf.highlight, leaf.highlightIndex)}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {children}
+      </span>
+    );
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: globalThis.MouseEvent) => {
@@ -569,11 +581,10 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       const lastHighlightIdx = errorSpans.length - 1;
       setSelectedHighlightIdx(lastHighlightIdx);
       
-      // Retry finding the element with backoff in case DOM hasn't updated yet
-      let attempts = 0;
-      const maxAttempts = 5;
-      const retryInterval = 50;
-      
+      // Use requestAnimationFrame loop with timeout to wait for DOM update
+      const startTime = Date.now();
+      const timeout = 1000; // Wait up to 1 second
+
       const tryOpenDropdown = () => {
         const targetElem = document.querySelector(
           `.highlight[data-highlight-index="${lastHighlightIdx}"]`
@@ -592,13 +603,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           requestAnimationFrame(() => {
             setDropdownAnimation("fade-in");
           });
-        } else if (attempts < maxAttempts) {
-          attempts++;
-          setTimeout(tryOpenDropdown, retryInterval);
+        } else if (Date.now() - startTime < timeout) {
+          requestAnimationFrame(tryOpenDropdown);
         }
       };
-      
-      tryOpenDropdown();
+
+      requestAnimationFrame(tryOpenDropdown);
     }
   }, [errorSpans.length, highlightInserted, spanDropdown]);
 
@@ -639,70 +649,59 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
 
   useEffect(() => {
     // 1. Handle Text Sync
-    // Only sync external modifiedText changes into the editor if this wasn't from a user edit
-    // Use lastEmittedText to ignore updates that are just echoes of our own changes
-    // If we are currently editing (isInternalEditRef), we generally ignore external updates 
-    // UNLESS they are significantly different (not just an echo).
-    // But detecting "significantly different" is hard. 
-    // We rely on lastEmittedText to filter echoes.
-    
+    // Only sync external modifiedText changes into the editor if this wasn't from a user edit.
+    // We update syncStateRef immediately when we accept an external change to keep it consistent.
+
     let textSynced = false;
     let shouldSyncText = false;
-    
+
     if (modifiedText !== lastEmittedText.current) {
-        // External text is different from what we last sent.
-        // It could be a genuine external update, or an echo we missed?
-        // If we are editing, we are skeptical. 
-        if (!isInternalEditRef.current) {
-            shouldSyncText = true;
-        } else {
-             // If we are editing, but the prop changed to something we didn't send?
-             // It might be an external overwrite. We probably should accept it?
-             // Or it's a conflict. "Last writer wins" usually means local wins in editor.
-             // We stick to local if editing.
-             shouldSyncText = false;
-        }
+      if (!isInternalEditRef.current) {
+        shouldSyncText = true;
+      }
     }
 
     if (shouldSyncText) {
-        const currentText = Editor.string(editor, []);
-        if (modifiedText !== currentText) {
-          const nextValue: Descendant[] = [
-            {
-              type: "paragraph",
-              children: [{ text: modifiedText || "" }],
-            },
-          ];
-          editor.children = nextValue;
-          Editor.normalize(editor, { force: true });
-          setValue(nextValue);
-          // Reset lastEmittedText since we just accepted an external change
-          lastEmittedText.current = modifiedText;
-          textSynced = true;
-        }
+      const currentText = Editor.string(editor, []);
+      if (modifiedText !== currentText) {
+        const nextValue: Descendant[] = [
+          {
+            type: "paragraph",
+            children: [{ text: modifiedText || "" }],
+          },
+        ];
+        editor.children = nextValue;
+        Editor.normalize(editor, { force: true });
+        setValue(nextValue);
+        // Reset lastEmittedText since we just accepted an external change
+        lastEmittedText.current = modifiedText;
+        textSynced = true;
+        
+        // Update sync ref text immediately
+        syncStateRef.current.text = modifiedText;
+      }
     }
-      
+
     // 2. Handle Span Sync
-    // Also sync internal spans if available.
-    // Logic: Sync if text synced OR if spans changed externally and we aren't editing.
-    // To filter span echoes, we would check lastEmittedSpans, but deep comparison is expensive.
-    // Instead we rely on reference equality + isInternalEditRef.
+    // We verify if spans need updating by comparing with syncStateRef (current internal state)
+    // avoiding the need to add internalSpans to the dependency array.
     
-    const spansChanged = errorSpans !== internalSpans;
-    const isSpanEcho = errorSpans === lastEmittedSpans.current; 
-    
-    if (errorSpans && spansChanged) {
+    const isSpanEcho = errorSpans === lastEmittedSpans.current;
+    const currentInternalSpans = syncStateRef.current.spans;
+    const spansChanged = JSON.stringify(errorSpans ?? null) !== JSON.stringify(currentInternalSpans ?? null);
+
+    if (errorSpans) {
         if (textSynced) {
              // If text reset, we MUST reset spans to match
              setInternalSpans(errorSpans);
-             syncStateRef.current = { text: modifiedText, spans: errorSpans };
-        } else if (!isInternalEditRef.current && !isSpanEcho) {
-             // Not editing, and not an echo -> External update (e.g. deletion from sidebar)
+             syncStateRef.current.spans = errorSpans;
+        } else if (spansChanged && !isInternalEditRef.current && !isSpanEcho) {
+             // Not editing, and not an echo -> External update
              setInternalSpans(errorSpans);
-             syncStateRef.current = { text: modifiedText, spans: errorSpans };
+             syncStateRef.current.spans = errorSpans;
         }
     }
-  }, [editor, modifiedText, errorSpans, internalSpans]);
+  }, [editor, modifiedText, errorSpans]);
 
   //   Return JSX
   return (
@@ -850,9 +849,11 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
             {Object.keys(colorMappings).map((error_type) => (
               <div className="dropdown-selection" key={error_type}>
                 <li
-                  style={{
-                    "--hover-color": colorMappings[error_type],
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      "--hover-color": colorMappings[error_type],
+                    } as React.CSSProperties & { [key: string]: string }
+                  }
                   onClick={() => handleTypeSelect(error_type)}
                 >
                   <p>{error_type}</p>
