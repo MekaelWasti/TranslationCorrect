@@ -4,12 +4,34 @@ import {
   DIFF_EQUAL,
   diff_match_patch,
 } from "diff-match-patch";
-import React, { useRef, useEffect, useCallback, useState } from "react";
+import React, { useRef, useEffect, useCallback, useMemo, useState } from "react";
 import "../../index.css";
 import { useSpanEvalContext } from "../SpanEvalProvider";
-import HighlightedText from "./HighlightedText";
 import { SpanScoreDropdown } from "../scoring/SpanScoreDropdown";
-import { clear } from "console";
+import { BaseEditor, createEditor, Descendant, Editor, Node as SlateNode, Range, Text, Transforms } from "slate";
+import { Slate, Editable, ReactEditor, RenderLeafProps, withReact } from "slate-react";
+import { HistoryEditor, withHistory } from "slate-history";
+import { HighlightedError, colorMappings } from "../../types";
+
+type CustomText = {
+  text: string;
+  isHighlight?: boolean;
+  highlight?: HighlightedError;
+  highlightIndex?: number;
+};
+
+type ParagraphElement = {
+  type: "paragraph";
+  children: CustomText[];
+};
+
+declare module "slate" {
+  interface CustomTypes {
+    Editor: BaseEditor & ReactEditor & HistoryEditor;
+    Element: ParagraphElement;
+    Text: CustomText;
+  }
+}
 
 type PostEditContainerProps = {
   currentMode?: "Annotation Mode" | "QA Mode" | "QA Comparison";
@@ -20,25 +42,6 @@ type PostEditContainerProps = {
   setModifiedText: (newText: string) => void;
   diffContent: React.ReactNode;
   setDiffContent: (newDiffContent: React.ReactNode) => void;
-};
-
-// Debounce function
-const useDebounce = (callback: Function, delay: number) => {
-  const timerRef = useRef<number | null>(null);
-
-  const debouncedCallback = useCallback(
-    (...args: any[]) => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current);
-      }
-      timerRef.current = window.setTimeout(() => {
-        callback(...args);
-      }, delay);
-    },
-    [callback, delay]
-  );
-
-  return debouncedCallback;
 };
 
 // Originally inside component, extracted it out
@@ -80,216 +83,197 @@ export const generateDiff = (original: string, modified: string, setModifiedText
 // **PostEditContainer Component**
 export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   machineTranslation,
-  setMachineTranslation,
   onDiffTextUpdate,
   modifiedText,
   setModifiedText,
-  diffContent,
   setDiffContent,
   currentMode,
 }) => {
+  const editor = useMemo(() => withHistory(withReact(createEditor() as ReactEditor)), []);
   const editableDivRef = useRef<HTMLDivElement>(null);
-  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans, setErrorSpans } = useSpanEvalContext();
+  const isInternalEditRef = useRef(false); // Track if current change is from user edit
+  const lastEmittedText = useRef<string | null>(null); // Track last text emitted to parent to prevent echo loops
+  const lastEmittedSpans = useRef<HighlightedError[] | null>(null); // Track last spans emitted to parent
+  const updateTimeoutRef = useRef<number | null>(null); // Debounce timeout for span updates
+  const { addNewErrorSpan, deleteErrorSpan, clearErrorSpans, errorSpans, setErrorSpans, updateSpanErrorType, updateSpanSeverity, setSpanSeverity } = useSpanEvalContext();
+  
+  // Local optimistic state for spans to ensure synchronous updates with text editing
+  const [internalSpans, setInternalSpans] = useState<HighlightedError[]>(errorSpans || []);
 
-  const caretOffsetRef = useRef<number>(0);
+  // Ref to hold the synchronous state of text and spans to handle rapid updates avoiding race conditions
+  const syncStateRef = useRef<{ text: string; spans: HighlightedError[] }>({
+    text: modifiedText,
+    spans: errorSpans || [],
+  });
+  
+  // Sync the ref when props change (only if not an internal edit to avoid overwriting pending state)
+  useEffect(() => {
+    if (!isInternalEditRef.current) {
+        syncStateRef.current = {
+            text: modifiedText,
+            spans: errorSpans || []
+        };
+    }
+  }, [modifiedText, errorSpans]);
+
+  const [value, setValue] = useState<Descendant[]>([
+    {
+      type: "paragraph",
+      children: [{ text: modifiedText || "" }],
+    },
+  ]);
+
   const [showInsertButton, setShowInsertButton] = useState(false);
   const [buttonPosition, setButtonPosition] = useState({ top: 0, left: 0 });
   const [highlightInserted, setHighlightInserted] = useState(false);
 
-  const [isComposing, setIsComposing] = useState(false);
-
   // Add state for clear button
   const [clearButtonClicked, setClearButtonClicked] = useState(false);
-  const [prevErrorSpansLength, setPrevErrorSpansLength] = useState(0);
 
-  // Helper functions for caret management:
-  function getCaretCharacterOffsetWithin(element: Node): number {
-    let caretOffset = 0;
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(element);
-      preCaretRange.setEnd(range.endContainer, range.endOffset);
-      caretOffset = preCaretRange.toString().length;
-    }
-    return caretOffset;
-  }
+  // Hover / tooltip / dropdown state (moved from HighlightedText)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [hoveredHighlight, setHoveredHighlight] = useState<HighlightedError | null>(null);
+  const [hoveredHighlightIdx, setHoveredHighlightIdx] = useState<number | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+  const [tooltipStyle, setTooltipStyle] = useState<{ top: number; left: number }>({
+    top: 0,
+    left: 0,
+  });
+  const [deleteButtonVisible, setDeleteButtonVisible] = useState(false);
+  const [deleteButtonStyle, setDeleteButtonStyle] = useState<{ top: number; left: number; width?: number }>({
+    top: 0,
+    left: 0,
+  });
+  const [selectedHighlightIdx, setSelectedHighlightIdx] = useState<number | null>(null);
+  const [selectedSpan, setSelectedSpan] = useState<string>("");
+  const [spanDropdown, setSpanDropdown] = useState(false);
+  const [dropdownAnimation, setDropdownAnimation] = useState<string>("");
+  const [spanPosition, setSpanPosition] = useState<{ top: number; left: number } | null>(null);
+  const [initialSpanPosition, setInitialSpanPosition] = useState<{ top: number; left: number } | null>(null);
 
-  function setCaretPosition(element: Node, offset: number) {
-    const range = document.createRange();
-    const selection = window.getSelection();
-    let currentOffset = 0;
-
-    function traverseNodes(node: Node): boolean {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const textLength = node.textContent?.length || 0;
-        if (currentOffset + textLength >= offset) {
-          range.setStart(node, offset - currentOffset);
-          range.collapse(true);
-          if (selection) {
-            selection.removeAllRanges();
-            selection.addRange(range);
-          }
-          return true;
+  const updateSpansForTextChange = useCallback(
+    (newText: string) => {
+      // Use Slate operations to update spans instead of diff-match-patch
+      // This is more reliable for preserving cursor position relative to spans
+      
+      const currentSpans = syncStateRef.current.spans;
+      // We process operations from the editor to determine exact shifts
+      let updatedSpans = [...currentSpans];
+      
+      // We assume mostly single text node at [0, 0] or linear text.
+      // Since `editor.operations` reflects the change that JUST happened.
+      
+      editor.operations.forEach((op) => {
+        if (op.type === "insert_text") {
+             const opOffset = op.offset; 
+             // Only process if it's a text op on our content
+             if (op.path.length > 0) {
+                 const insertLength = op.text.length;
+                 updatedSpans = updatedSpans.map((span) => {
+                    let { start_index_translation: s, end_index_translation: e } = span;
+                    
+                    // Insert before span? Shift both.
+                    if (opOffset <= s) {
+                        s += insertLength;
+                        e += insertLength;
+                    }
+                    // Insert inside span? Shift end.
+                    // We use <= e to allow 'sticky' extension at the end of the span,
+                    // which fixes the issue of subsequent characters being 'thrown out'.
+                    else if (opOffset <= e) {
+                         e += insertLength;
+                    }
+                    
+                    return { ...span, start_index_translation: s, end_index_translation: e };
+                 });
+             }
+        } else if (op.type === "remove_text") {
+             const opOffset = op.offset;
+             if (op.path.length > 0) {
+                 const deleteLength = op.text.length;
+                 const changeS = opOffset;
+                 const changeE = opOffset + deleteLength;
+                 
+                 updatedSpans = updatedSpans.map((span) => {
+                    let { start_index_translation: s, end_index_translation: e } = span;
+                    
+                    // Helper to map a point against a deletion range
+                    const mapPoint = (p: number) => {
+                        if (p <= changeS) return p;
+                        if (p >= changeE) return p - deleteLength;
+                        return changeS; // Snap to start of deletion
+                    };
+                    
+                    return { ...span, start_index_translation: mapPoint(s), end_index_translation: mapPoint(e) };
+                 });
+             }
         }
-        currentOffset += textLength;
-      } else {
-        for (let i = 0; i < node.childNodes.length; i++) {
-          if (traverseNodes(node.childNodes[i])) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
+      });
+      
+      // Fallback: If no ops processed (e.g. paste or replace), maybe use DMP?
+      // But for typing, ops should exist. 
+      // Filter out empty spans?
+      updatedSpans = updatedSpans.filter(s => s.start_index_translation < s.end_index_translation);
 
-    traverseNodes(element);
-  }
-
-  /**
-   * Returns the selection start offset relative to the container's full text.
-   */
-  function getSelectionStartOffset(element: Node): number {
-    let caretOffset = 0;
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0);
-      const preCaretRange = range.cloneRange();
-      preCaretRange.selectNodeContents(element);
-      preCaretRange.setEnd(range.startContainer, range.startOffset);
-      caretOffset = preCaretRange.toString().length;
-    }
-    return caretOffset;
-  }
-
-  const handleCompositionStart = () => {
-    console.log("Composition started");
-    setIsComposing(true);
-  };
-
-  const handleCompositionEnd = (event: CompositionEvent) => {
-    console.log("Composition ended:", event.data);
-    setIsComposing(false);
-    // Process final input once composition is complete
-    handleInput();
-  };
-
-  const handleInput = () => {
-    // Don't process input if we're in the middle of an IME composition
-    if (isComposing) return;
-    if (!editableDivRef.current) return;
-    caretOffsetRef.current = getCaretCharacterOffsetWithin(
-      editableDivRef.current
-    );
-    const newText = editableDivRef.current.innerText || "";
-
-    // Log the new text for debugging
-    console.log("New text after input:", newText);
-
-    // ---------- Incremental Change Detection ----------
-    // Find the first index where the old and new texts differ.
-    let changePos = 0;
-    while (
-      changePos < modifiedText.length &&
-      changePos < newText.length &&
-      modifiedText[changePos] === newText[changePos]
-    ) {
-      changePos++;
-    }
-    // Find matching portion from the end.
-    let changeEndOld = modifiedText.length;
-    let changeEndNew = newText.length;
-    while (
-      changeEndOld > changePos &&
-      changeEndNew > changePos &&
-      modifiedText[changeEndOld - 1] === newText[changeEndNew - 1]
-    ) {
-      changeEndOld--;
-      changeEndNew--;
-    }
-    const delta = changeEndNew - changeEndOld; // positive for insertion, negative for deletion
-    console.log(
-      `Change region: [${changePos}, ${changeEndOld}) in old text, [${changePos}, ${changeEndNew}) in new text; delta = ${delta}`
-    );
-    // ---------- End Incremental Change Detection ----------
-
-    // Update spans based on the change.
-    // const updatedSpans = addedErrorSpans.map((span: any) => {
-    const updatedSpans = errorSpans.map((span) => {
-      const s = span.start_index_translation;
-      const e = span.end_index_translation;
-      let new_s = s;
-      let new_e = e;
-
-      if (e <= changePos) {
-        // The span is completely before the change region.
-        new_s = s;
-        new_e = e;
-      } else if (s >= changeEndOld) {
-        // The span is completely after the change region: shift it.
-        new_s = s + delta;
-        new_e = e + delta;
-      } else {
-        // The span overlaps the change region.
-        // If the span starts in the change region, set it to changePos.
-        new_s = s < changePos ? s : changePos;
-        // If the span extends beyond the change region, shift its end.
-        new_e = e >= changeEndOld ? e + delta : changePos;
-        if (new_e < new_s) new_e = new_s;
-      }
-      return {
-        ...span,
-        start_index_translation: new_s,
-        end_index_translation: new_e,
+      // Update synchronous ref immediately for the NEXT character typed
+      syncStateRef.current = {
+        text: newText,
+        spans: updatedSpans
       };
-    });
-    setErrorSpans(updatedSpans);
-    // reposition caret and update diff
-    setModifiedText(newText);
-    generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);
-  };
 
-  const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const text = e.clipboardData.getData("text/plain");
-
-    if (!editableDivRef.current) return;
-
-    const start = getSelectionStartOffset(editableDivRef.current);
-    const end = getCaretCharacterOffsetWithin(editableDivRef.current);
-
-    const newText =
-      modifiedText.slice(0, start) + text + modifiedText.slice(end);
-
-    // Update caretRef to point to end of pasted text
-    caretOffsetRef.current = start + text.length;
-    
-    // Trigger update sequence
-    generateDiff(
+      setInternalSpans(updatedSpans);
+      setErrorSpans(updatedSpans);
+      setModifiedText(newText);
+      lastEmittedText.current = newText;
+      lastEmittedSpans.current = updatedSpans;
+      // generateDiff calls setModifiedText internally, but we've already updated the spans and text state.
+      // We call it here to generate the visual diff elements for the UI.
+      generateDiff(machineTranslation, newText, () => {}, onDiffTextUpdate);
+    },
+    [
+      editor, // changes in editor ref are rare but operation access needs it
       machineTranslation,
-      newText,
-      setModifiedText,
-      onDiffTextUpdate
-    );
-  };
+      onDiffTextUpdate,
+      setErrorSpans,
+      setModifiedText, 
+    ]
+  );
+
+
+  const handleEditorChange = useCallback(
+    (nextValue: Descendant[]) => {
+      setValue(nextValue);
+      const newText = Editor.string(editor, []);
+      if (newText !== modifiedText) {
+        isInternalEditRef.current = true;
+        updateSpansForTextChange(newText);
+        // Reset the flag after a meaningful delay to ensure the parent update / effect cycle completes.
+        // 500ms should be enough to cover slow React render cycles or async prop updates
+        if (updateTimeoutRef.current) clearTimeout(updateTimeoutRef.current);
+        updateTimeoutRef.current = window.setTimeout(() => {
+          isInternalEditRef.current = false;
+        }, 500);
+      }
+    },
+    [editor, modifiedText, updateSpansForTextChange]
+  );
 
   const applyHighlight = () => {
     setHighlightInserted(true);
-    const selection = window.getSelection();
-    if (!selection?.rangeCount || !editableDivRef.current) return;
+    const selection = editor.selection;
+    if (!selection || Range.isCollapsed(selection)) return;
 
-    // TODO: fix string index bug
-    // const start = String(modifiedText).indexOf(selection.toString()); // This line looks for the FIRST occurance of a higlighted word, so if you highlight an occurance that is later in the target string, the first occurance get's highlighted instead
-    const start = getSelectionStartOffset(editableDivRef.current);
-    const selectedText = selection.toString();
+    const [startPoint, endPoint] = Range.edges(selection);
+    const start = Math.min(startPoint.offset, endPoint.offset);
+    const end = Math.max(startPoint.offset, endPoint.offset);
+    const selectedText = Editor.string(editor, selection);
     if (!selectedText.trim()) return;
 
     const original_text = selectedText;
     addNewErrorSpan(
       original_text,
       start,
-      start + selectedText.length,
+      end,
       "Addition",
       "Minor"
     );
@@ -300,6 +284,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       clearErrorSpans();
       setModifiedText(machineTranslation);
       setDiffContent(machineTranslation);
+      setValue([
+        {
+          type: "paragraph",
+          children: [{ text: machineTranslation || "" }],
+        },
+      ]);
       setClearButtonClicked(false);
     } else {
       setClearButtonClicked(true);
@@ -307,77 +297,28 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     }
   };
 
-  const debouncedHandleInput = useDebounce(handleInput, 300);
-
-  const handleCompositionUpdate = (event: CompositionEvent) => {
-    console.log("Composition updated:", event.data);
-  };
-
-  // TODO:
-
-  // React event handler for use with React components
-  const handleReactMouseUp = (event: React.MouseEvent<HTMLDivElement>) => {
-    console.log("Mouse up (React)");
-    // Handle React-specific logic here
-  };
-
+  // Reset highlightInserted after dropdown has opened
   useEffect(() => {
-    document.addEventListener("mouseup", handleNativeMouseUp);
-    return () => {
-      document.removeEventListener("mouseup", handleNativeMouseUp);
-    };
-  }, []);
-
-  // Reset highlightInserted when a new span is added
-  useEffect(() => {
-    if (errorSpans.length > prevErrorSpansLength && highlightInserted) {
-      // A new span was added and highlightInserted was true, so reset it
+    if (spanDropdown && highlightInserted) {
       setHighlightInserted(false);
     }
-    setPrevErrorSpansLength(errorSpans.length);
-  }, [errorSpans.length, prevErrorSpansLength, highlightInserted]);
+  }, [spanDropdown, highlightInserted]);
 
-  // Native event handler for use with addEventListener
-  const handleNativeMouseUp = (event: MouseEvent) => {
-    console.log("Mouse up (native)");
-
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim().length > 0) {
-      const range = selection.getRangeAt(0);
-      const rect = range.getBoundingClientRect();
-      setShowInsertButton(true);
-
-      const handleMouseMove = (event: MouseEvent) => {
-        const mouseX = event.clientX;
-        const leftBound = rect.left + window.scrollX;
-        const rightBound = rect.right + window.scrollX;
-
-        // Constrain button's horizontal position within highlight
-        const constrainedLeft = Math.min(
-          Math.max(mouseX, leftBound),
-          rightBound
-        );
-
+  const handleEditorMouseUp = () => {
+    const selection = editor.selection;
+    if (selection && Range.isExpanded(selection)) {
+      try {
+        const domRange = ReactEditor.toDOMRange(editor, selection);
+        const rect = domRange.getBoundingClientRect();
+        setShowInsertButton(true);
         setButtonPosition({
           top: rect.bottom + window.scrollY,
-          left: constrainedLeft,
+          left: rect.left + window.scrollX + rect.width / 2,
         });
-      };
-
-      handleMouseMove(event);
-
-      // document.addEventListener("mousemove", handleMouseMove);
-
-      // // Remove the mousemove listener when mouse released
-      // document.addEventListener(
-      //   "mouseup",
-      //   () => {
-      //     document.removeEventListener("mousemove", handleMouseMove);
-      //   },
-      //   { once: true }
-      // );
+      } catch {
+        setShowInsertButton(false);
+      }
     } else {
-      setButtonPosition({ top: 0, left: 0 });
       setShowInsertButton(false);
     }
   };
@@ -388,40 +329,278 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     window.getSelection()?.removeAllRanges();
   };
 
-  useEffect(() => {
-    const editableDiv = editableDivRef.current;
-    if (editableDiv) {
-      editableDiv.addEventListener("compositionstart", handleCompositionStart);
-      editableDiv.addEventListener(
-        "compositionupdate",
-        handleCompositionUpdate
-      );
-      editableDiv.addEventListener("compositionend", handleCompositionEnd);
-      editableDiv.addEventListener("input", debouncedHandleInput);
+  const textOffsets = useMemo(() => {
+    const offsets = new Map<string, number>();
+    let offset = 0;
+    for (const [node, path] of SlateNode.texts(editor)) {
+      offsets.set(path.join(","), offset);
+      offset += node.text.length;
+    }
+    return offsets;
+  }, [editor, value]);
+
+  const decorate = useCallback(
+    ([node, path]: any) => {
+      const ranges: Range[] = [];
+      if (!Text.isText(node)) return ranges;
+
+      const nodeStart = textOffsets.get(path.join(",")) ?? 0;
+      const nodeEnd = nodeStart + node.text.length;
+
+      // Use syncStateRef to get the most up-to-date spans immediately during typing
+      // falling back to internalSpans if ref is somehow out of sync (rare)
+      const currentSpans = syncStateRef.current.spans || internalSpans;
+
+      currentSpans.forEach((span, idx) => {
+        const start = span.start_index_translation;
+        const end = span.end_index_translation;
+        if (end <= nodeStart || start >= nodeEnd || start === end) return;
+
+        const rangeStart = Math.max(start, nodeStart) - nodeStart;
+        const rangeEnd = Math.min(end, nodeEnd) - nodeStart;
+        ranges.push({
+          anchor: { path, offset: rangeStart },
+          focus: { path, offset: rangeEnd },
+          isHighlight: true,
+          highlight: span,
+          highlightIndex: idx,
+        } as Range);
+      });
+
+      return ranges;
+    },
+    [internalSpans, textOffsets] // We depend on internalSpans to trigger updates, but read from ref for data
+  );
+
+  const handleMouseEnterSpan = (
+    e: React.MouseEvent<HTMLSpanElement>,
+    highlight: HighlightedError,
+    highlightIdx: number
+  ) => {
+    if (!spanDropdown) {
+      setHoveredHighlight(highlight);
+      setHoveredHighlightIdx(highlightIdx);
+      setDeleteButtonVisible(true);
     }
 
-    return () => {
-      if (editableDiv) {
-        editableDiv.removeEventListener(
-          "compositionstart",
-          handleCompositionStart
-        );
-        editableDiv.removeEventListener(
-          "compositionupdate",
-          handleCompositionUpdate
-        );
-        editableDiv.removeEventListener("compositionend", handleCompositionEnd);
-        editableDiv.removeEventListener("input", debouncedHandleInput);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const spanWidth = rect.width;
+    const deleteButtonWidth = Math.max(spanWidth / 3, 30);
+
+    setDeleteButtonStyle({
+      top: rect.top + window.scrollY - 30,
+      left: rect.left + window.scrollX + spanWidth / 2 - deleteButtonWidth / 2,
+      width: deleteButtonWidth,
+    });
+
+    setSpanPosition({
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX,
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLSpanElement>) => {
+    if (hoveredHighlight || spanDropdown) {
+      setMousePosition({ x: e.clientX, y: e.clientY });
+    }
+    setTooltipStyle({
+      top: e.pageY + 25,
+      left: e.pageX - 125,
+    });
+  };
+
+  const handleMouseLeaveSpan = () => {
+    setTimeout(() => {
+      if (
+        !document.querySelector(".delete-span-button:hover") &&
+        !document.querySelector(".highlight:hover")
+      ) {
+        setHoveredHighlight(null);
+        setHoveredHighlightIdx(null);
+        setDeleteButtonVisible(false);
+      }
+    }, 100);
+  };
+
+  const handleMouseClick = (
+    e: React.MouseEvent<HTMLSpanElement>,
+    highlight: HighlightedError,
+    highlightIdx: number
+  ) => {
+    if (e.button === 0) {
+      setSelectedSpan(highlight.error_type);
+      setHoveredHighlight(highlight);
+      setSelectedHighlightIdx(highlightIdx);
+      setSpanSeverity(highlight.error_severity);
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const newPosition = {
+        top: rect.top + window.scrollY,
+        left: centerX + window.scrollX - 75,
+      };
+      setSpanPosition(newPosition);
+      setInitialSpanPosition(newPosition);
+      return;
+    }
+
+    e.stopPropagation();
+    if (highlight.error_type === selectedSpan && spanDropdown) {
+      setDropdownAnimation("fade-out");
+      setTimeout(() => {
+        setSpanDropdown(false);
+        setDropdownAnimation("");
+      }, 250);
+    } else {
+      setSelectedSpan(highlight.error_type);
+      setSpanSeverity(highlight.error_severity);
+      setSpanDropdown(true);
+      setSelectedHighlightIdx(highlightIdx);
+
+      requestAnimationFrame(() => {
+        setDropdownAnimation("fade-in");
+      });
+
+      setHoveredHighlight(highlight);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const dropdownPos = {
+        top: rect.bottom + window.scrollY + 10,
+        left: centerX + window.scrollX - 75,
+      };
+      setSpanPosition(dropdownPos);
+      setInitialSpanPosition(dropdownPos);
+    }
+  };
+
+  const handleDeleteSpan = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    idx: number
+  ) => {
+    e.stopPropagation();
+    const button = e.currentTarget;
+    button.style.transform = "scale(0.9)";
+    button.style.opacity = "0.8";
+    setTimeout(() => {
+      deleteErrorSpan(idx);
+      setDeleteButtonVisible(false);
+      setHoveredHighlight(null);
+      setHoveredHighlightIdx(null);
+    }, 0);
+  };
+
+  const handleTypeSelect = (type: string) => {
+    if (selectedHighlightIdx === null) return;
+    updateSpanErrorType(selectedHighlightIdx, type);
+    setDropdownAnimation("fade-out");
+    setTimeout(() => {
+      setSpanDropdown(false);
+      setDropdownAnimation("");
+    }, 250);
+  };
+
+  const renderLeaf = useCallback(
+    ({ attributes, children, leaf }: RenderLeafProps) => {
+      if (!leaf.isHighlight) {
+        return <span {...attributes}>{children}</span>;
+      }
+
+      return (
+        <span
+          {...attributes}
+          className={`highlight ${
+            selectedHighlightIdx === leaf.highlightIndex ? "highlight-selected" : ""
+          }`}
+          style={{
+            backgroundColor: colorMappings[leaf.highlight.error_type],
+          }}
+          data-highlight-index={leaf.highlightIndex}
+          onMouseEnter={(e) =>
+            handleMouseEnterSpan(e, leaf.highlight, leaf.highlightIndex)
+          }
+          onMouseLeave={handleMouseLeaveSpan}
+          onMouseMove={handleMouseMove}
+          onMouseDown={(e) => handleMouseClick(e, leaf.highlight, leaf.highlightIndex)}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {children}
+        </span>
+      );
+    },
+    [handleMouseClick, handleMouseEnterSpan, handleMouseLeaveSpan, handleMouseMove, selectedHighlightIdx]
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event: globalThis.MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as globalThis.Node) &&
+        spanDropdown
+      ) {
+        setDropdownAnimation("fade-out");
+        setTimeout(() => {
+          setSpanDropdown(false);
+          setDropdownAnimation("");
+        }, 250);
       }
     };
-  }, [debouncedHandleInput]);
+    document.addEventListener("mousedown", handleClickOutside as EventListener);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [spanDropdown]);
 
-  // After modifiedText updates (and the re-render completes), restore the caret position.
   useEffect(() => {
-    if (editableDivRef.current) {
-      setCaretPosition(editableDivRef.current, caretOffsetRef.current);
+    const onDocClick = (ev: globalThis.MouseEvent) => {
+      if (!(ev.target as HTMLElement).closest(".highlight, .delete-span-button")) {
+        setHoveredHighlight(null);
+        setHoveredHighlightIdx(null);
+        setDeleteButtonVisible(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick as EventListener);
+    return () => {
+      document.removeEventListener("mousedown", onDocClick);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (highlightInserted && errorSpans.length > 0 && !spanDropdown) {
+      const lastHighlightIdx = errorSpans.length - 1;
+      setSelectedHighlightIdx(lastHighlightIdx);
+      
+      // Retry finding the element with backoff in case DOM hasn't updated yet
+      let attempts = 0;
+      const maxAttempts = 5;
+      const retryInterval = 50;
+      
+      const tryOpenDropdown = () => {
+        const targetElem = document.querySelector(
+          `.highlight[data-highlight-index="${lastHighlightIdx}"]`
+        ) as HTMLElement | null;
+
+        if (targetElem) {
+          const rect = targetElem.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const newPosition = {
+            top: rect.bottom + window.scrollY + 10,
+            left: centerX + window.scrollX - 75,
+          };
+          setSpanPosition(newPosition);
+          setInitialSpanPosition(newPosition);
+          setSpanDropdown(true);
+          requestAnimationFrame(() => {
+            setDropdownAnimation("fade-in");
+          });
+        } else if (attempts < maxAttempts) {
+          attempts++;
+          setTimeout(tryOpenDropdown, retryInterval);
+        }
+      };
+      
+      tryOpenDropdown();
     }
-  }, [modifiedText]);
+  }, [errorSpans.length, highlightInserted, spanDropdown]);
 
   // const generateDiff = (original: string, modified: string) => {
   //   const dmp = new diff_match_patch();
@@ -459,17 +638,71 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
   // };
 
   useEffect(() => {
-    document.addEventListener("mouseup", handleNativeMouseUp);
-    return () => {
-      document.removeEventListener("mouseup", handleNativeMouseUp);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isComposing) {
-      handleInput();
+    // 1. Handle Text Sync
+    // Only sync external modifiedText changes into the editor if this wasn't from a user edit
+    // Use lastEmittedText to ignore updates that are just echoes of our own changes
+    // If we are currently editing (isInternalEditRef), we generally ignore external updates 
+    // UNLESS they are significantly different (not just an echo).
+    // But detecting "significantly different" is hard. 
+    // We rely on lastEmittedText to filter echoes.
+    
+    let textSynced = false;
+    let shouldSyncText = false;
+    
+    if (modifiedText !== lastEmittedText.current) {
+        // External text is different from what we last sent.
+        // It could be a genuine external update, or an echo we missed?
+        // If we are editing, we are skeptical. 
+        if (!isInternalEditRef.current) {
+            shouldSyncText = true;
+        } else {
+             // If we are editing, but the prop changed to something we didn't send?
+             // It might be an external overwrite. We probably should accept it?
+             // Or it's a conflict. "Last writer wins" usually means local wins in editor.
+             // We stick to local if editing.
+             shouldSyncText = false;
+        }
     }
-  }, [isComposing]);
+
+    if (shouldSyncText) {
+        const currentText = Editor.string(editor, []);
+        if (modifiedText !== currentText) {
+          const nextValue: Descendant[] = [
+            {
+              type: "paragraph",
+              children: [{ text: modifiedText || "" }],
+            },
+          ];
+          editor.children = nextValue;
+          Editor.normalize(editor, { force: true });
+          setValue(nextValue);
+          // Reset lastEmittedText since we just accepted an external change
+          lastEmittedText.current = modifiedText;
+          textSynced = true;
+        }
+    }
+      
+    // 2. Handle Span Sync
+    // Also sync internal spans if available.
+    // Logic: Sync if text synced OR if spans changed externally and we aren't editing.
+    // To filter span echoes, we would check lastEmittedSpans, but deep comparison is expensive.
+    // Instead we rely on reference equality + isInternalEditRef.
+    
+    const spansChanged = errorSpans !== internalSpans;
+    const isSpanEcho = errorSpans === lastEmittedSpans.current; 
+    
+    if (errorSpans && spansChanged) {
+        if (textSynced) {
+             // If text reset, we MUST reset spans to match
+             setInternalSpans(errorSpans);
+             syncStateRef.current = { text: modifiedText, spans: errorSpans };
+        } else if (!isInternalEditRef.current && !isSpanEcho) {
+             // Not editing, and not an echo -> External update (e.g. deletion from sidebar)
+             setInternalSpans(errorSpans);
+             syncStateRef.current = { text: modifiedText, spans: errorSpans };
+        }
+    }
+  }, [editor, modifiedText, errorSpans, internalSpans]);
 
   //   Return JSX
   return (
@@ -496,20 +729,25 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
             </button>
           </div>
         )}
-        <div
-          className="post-edit-translation-field"
-          ref={editableDivRef}
-          contentEditable
-          suppressContentEditableWarning
-          onMouseUp={handleReactMouseUp}
-          onPaste={handlePaste}
-        >
-          <HighlightedText
-            text={modifiedText}
-            highlights={errorSpans}
-            highlightKey="end_index_translation"
-            highlightInserted={highlightInserted}
-          />
+        <div className="post-edit-translation-field" ref={editableDivRef}>
+          <Slate editor={editor} initialValue={value} onChange={handleEditorChange}>
+            <Editable
+              onMouseUp={handleEditorMouseUp}
+              onPaste={(e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData("text/plain").replace(/\n/g, " ");
+                editor.insertText(text);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                }
+              }}
+              renderLeaf={renderLeaf}
+              decorate={decorate}
+              suppressContentEditableWarning
+            />
+          </Slate>
         </div>
         <button
           className={`insert-span-popup-button ${
@@ -525,6 +763,106 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
           +
         </button>
       </div>
+
+      {/* Tooltip */}
+      {hoveredHighlight && mousePosition && (
+        <div className="error-tooltip" style={tooltipStyle}>
+          <h3 style={{ color: colorMappings[hoveredHighlight.error_type] }}>
+            Error Type: {hoveredHighlight.error_type}
+          </h3>
+          <div className="error-tooltip-text-display">
+            <p
+              style={{
+                color:
+                  hoveredHighlight.error_severity === "Minor"
+                    ? "#ffd000"
+                    : hoveredHighlight.error_severity === "Major"
+                    ? "orange"
+                    : "red",
+              }}
+            >
+              <strong style={{ color: "white" }}>Error Severity:</strong>{" "}
+              {hoveredHighlight.error_severity}
+            </p>
+            {hoveredHighlight.error_confidence && (
+              <p>
+                <strong>Error Confidence:</strong>{" "}
+                {hoveredHighlight.error_confidence}
+              </p>
+            )}
+            <p>
+              <strong>Original Text:</strong> {hoveredHighlight.original_text}
+            </p>
+            {hoveredHighlight.translated_text && (
+              <p>
+                <strong>Translated Text:</strong>{" "}
+                {hoveredHighlight.translated_text}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Delete button */}
+      {deleteButtonVisible && hoveredHighlightIdx !== null && (
+        <button
+          className="delete-span-button visible"
+          style={deleteButtonStyle}
+          onClick={(e) => handleDeleteSpan(e, hoveredHighlightIdx)}
+          onMouseEnter={() => setDeleteButtonVisible(true)}
+          onMouseLeave={handleMouseLeaveSpan}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onKeyPress={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+        >
+          X
+        </button>
+      )}
+
+      {/* Change error type dropdown */}
+      {spanDropdown && (
+        <div
+          ref={dropdownRef}
+          className={`span-dropdown ${dropdownAnimation}`}
+          onContextMenu={(event) => event.preventDefault()}
+          contentEditable={false}
+          onKeyDown={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          onKeyPress={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+          }}
+          style={{
+            position: "absolute",
+            left: initialSpanPosition?.left ?? spanPosition?.left,
+            top: initialSpanPosition?.top ?? spanPosition?.top,
+            zIndex: 1000,
+          }}
+        >
+          <ul>
+            {Object.keys(colorMappings).map((error_type) => (
+              <div className="dropdown-selection" key={error_type}>
+                <li
+                  style={{
+                    "--hover-color": colorMappings[error_type],
+                  } as React.CSSProperties}
+                  onClick={() => handleTypeSelect(error_type)}
+                >
+                  <p>{error_type}</p>
+                </li>
+                <hr className="dropdown-divider" />
+              </div>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 };
