@@ -13,7 +13,7 @@
 
 # Use TranslationCORRECT Now!
 
-The application is available <a href="https://translation-correct-annotation-git-27a7e8-mekaelwastis-projects.vercel.app/" target="_blank" rel="noopener noreferrer">here.</a>
+The application is available <a href="https://translation-correct-annotation-task-dutd.vercel.app/" target="_blank" rel="noopener noreferrer">here.</a>
 
 ---
 
