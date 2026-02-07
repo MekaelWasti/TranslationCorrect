@@ -215,6 +215,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       // Filter out empty spans?
       updatedSpans = updatedSpans.filter(s => s.start_index_translation < s.end_index_translation);
 
+      // Update span text content to match the edited text
+      updatedSpans = updatedSpans.map((span) => ({
+        ...span,
+        original_text: newText.substring(span.start_index_translation, span.end_index_translation)
+      }));
+
       // Update synchronous ref immediately for the NEXT character typed
       syncStateRef.current = {
         text: newText,
@@ -270,6 +276,12 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
     if (!selectedText.trim()) return;
 
     const original_text = selectedText;
+    console.log("Span recorded:", {
+      text: original_text,
+      start,
+      end,
+      length: end - start,
+    });
     addNewErrorSpan(
       original_text,
       start,
