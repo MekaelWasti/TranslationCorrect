@@ -242,9 +242,8 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
       setModifiedText(newText);
       lastEmittedText.current = newText;
       lastEmittedSpans.current = updatedSpans;
-      // generateDiff calls setModifiedText internally, but we've already updated the spans and text state.
-      // We call it here to generate the visual diff elements for the UI.
-      generateDiff(machineTranslation, newText, setModifiedText, onDiffTextUpdate);
+      const noopSetModifiedText: typeof setModifiedText = () => {};
+      generateDiff(machineTranslation, newText, noopSetModifiedText, onDiffTextUpdate);
     },
     [
       editor, // changes in editor ref are rare but operation access needs it
@@ -757,7 +756,7 @@ export const PostEditContainer: React.FC<PostEditContainerProps> = ({
             top: buttonPosition.top + 20,
             left: `calc(${buttonPosition.left}px - 43px)`,
           }}
-          onClick={applyHighlight}
+          onClick={handleInsertSpanClick}
         >
           +
         </button>
