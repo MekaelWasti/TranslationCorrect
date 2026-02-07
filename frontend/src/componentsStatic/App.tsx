@@ -496,7 +496,6 @@ const App: React.FC = () => {
             {currentMode !== "QA Comparison" && (
               <PostEditContainer
               machineTranslation={machineTranslation}
-              setMachineTranslation={setTranslatedText}
               // highlightedError={highlightedError!}
               // setHighlightedError={setErrorSpans}
               onDiffTextUpdate={handleDiffTextUpdate}
@@ -504,7 +503,6 @@ const App: React.FC = () => {
               setModifiedText={setModifiedText}
               // addedErrorSpans={addedErrorSpans}
               // setAddedErrorSpans={setAddedErrorSpans}
-              diffContent={diffContent}
               setDiffContent={setDiffContent}
               currentMode={currentMode}
               />
